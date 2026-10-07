@@ -1,6 +1,6 @@
 # SAM Library Milestone 001 — Clean-room protocol and capability foundation
 
-Status: ready for handoff
+Status: closed
 
 Repository baseline: `8403e741be5daa23fe412ce7ebe5f280c5644665`
 
@@ -373,3 +373,5 @@ spec/deployed discrepancy discovered.
 
 Do not optimize API ergonomics prematurely. M001's job is to make invalid wire/state
 behavior difficult to represent and to give M002 a stable typed substrate.
+
+Closure evidence: `plans/closure/sam-library/001-status.md`.

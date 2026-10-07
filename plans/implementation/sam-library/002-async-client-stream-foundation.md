@@ -1,8 +1,8 @@
 # SAM Library Milestone 002 — Async client, Destination/NAMING, and STREAM foundation
 
-Status: blocked on Milestone 001
+Status: conditionally closed
 
-Repository baseline: `8403e741be5daa23fe412ce7ebe5f280c5644665` planning baseline; refresh after M001 closure.
+Repository baseline: `956238fcced742836833befaf6e748e97f435001` (M001 implementation baseline).
 
 Source roadmap:
 
@@ -286,3 +286,6 @@ any router quirk profile introduced.
 
 M003 will add datagrams and shared sessions. Avoid naming ordinary-session types in a way
 that makes shared sessions impossible to add without breaking the API.
+
+Closure evidence: `plans/closure/sam-library/002-status.md`. Java I2P plus a second-router
+live STREAM run remains an explicit residual condition.

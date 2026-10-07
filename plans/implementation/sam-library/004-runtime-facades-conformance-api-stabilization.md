@@ -1,8 +1,8 @@
 # SAM Library Milestone 004 — Runtime facades, resilience, conformance, and API stabilization
 
-Status: blocked on Milestone 003
+Status: conditionally closed
 
-Repository baseline: `8403e741be5daa23fe412ce7ebe5f280c5644665` planning baseline; refresh after M003 closure.
+Repository baseline: `956238fcced742836833befaf6e748e97f435001` (M003 implementation baseline).
 
 Source roadmap:
 
@@ -285,3 +285,6 @@ versions, and explicit successor readiness for bindings/service-tunnel adapter.
 After M004 closure, research M005/M006 separately. Do not automatically implement FFI or
 the tunnel adapter in the same change; both create new compatibility surfaces deserving
 their own plans.
+
+Closure evidence: `plans/closure/sam-library/004-status.md`. Multi-router conformance and
+broader recovery qualification remain explicit residual conditions.

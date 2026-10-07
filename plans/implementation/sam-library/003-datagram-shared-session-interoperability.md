@@ -1,8 +1,8 @@
 # SAM Library Milestone 003 — Datagram and shared-Destination interoperability
 
-Status: blocked on Milestone 002
+Status: conditionally closed
 
-Repository baseline: `8403e741be5daa23fe412ce7ebe5f280c5644665` planning baseline; refresh after M002 closure.
+Repository baseline: `956238fcced742836833befaf6e748e97f435001` (M002 implementation baseline).
 
 Source roadmap:
 
@@ -302,3 +302,6 @@ tests, and all verification commands actually run.
 This is the foundation's most interoperability-sensitive milestone. Prefer explicit
 Unsupported/Unknown over optimistic feature guessing. M004 should receive a behaviorally
 complete client, not a list of partially implemented 3.3 tokens.
+
+Closure evidence: `plans/closure/sam-library/003-status.md`. The Java/i2pd/i2pr live matrix
+and control-socket datagram modes remain explicit residual conditions.

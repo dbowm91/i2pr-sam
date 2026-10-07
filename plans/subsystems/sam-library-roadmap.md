@@ -281,11 +281,11 @@ Bindings, tunnel manager, and UI are not required for foundation closure.
 
 | Milestone | Status | Implementation plan | Closure | Blocker |
 |---|---|---|---|---|
-| 001 | ready | `plans/implementation/sam-library/001-clean-room-protocol-capability-foundation.md` | — | — |
-| 002 | blocked | `plans/implementation/sam-library/002-async-client-stream-foundation.md` | — | 001 |
-| 003 | blocked | `plans/implementation/sam-library/003-datagram-shared-session-interoperability.md` | — | 002 |
-| 004 | blocked | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | — | 003 |
-| 005 | proposed | — | — | 004 |
-| 006 | proposed | — | — | 004 + stable i2pr portable-core contract |
+| 001 | closed | `plans/implementation/sam-library/001-clean-room-protocol-capability-foundation.md` | `plans/closure/sam-library/001-status.md` | — |
+| 002 | conditionally closed | `plans/implementation/sam-library/002-async-client-stream-foundation.md` | `plans/closure/sam-library/002-status.md` | Java I2P + second-router live STREAM qualification |
+| 003 | conditionally closed | `plans/implementation/sam-library/003-datagram-shared-session-interoperability.md` | `plans/closure/sam-library/003-status.md` | Java/i2pd/i2pr matrix; control-socket datagram modes |
+| 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | `plans/closure/sam-library/004-status.md` | Live matrix; broader recovery qualification |
+| 005 | proposed | — | — | M005 plan may now be authored against the captured API baseline |
+| 006 | proposed | — | — | M004 + stable i2pr portable-core contract (i2pr Plan 379 ongoing) |
 | 007 | proposed | — | — | 006 |
 | 008 | proposed | — | — | 007 |
