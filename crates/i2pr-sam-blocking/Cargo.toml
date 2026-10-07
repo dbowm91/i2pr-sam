@@ -1,0 +1,18 @@
+[package]
+name = "i2pr-sam-blocking"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Blocking facade over the canonical async i2pr-sam client"
+
+[dependencies]
+i2pr-sam = { path = "../i2pr-sam" }
+i2pr-sam-proto = { path = "../i2pr-sam-proto" }
+tokio = { version = "1", features = ["io-util", "rt-multi-thread", "time"] }
+thiserror = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }
+
+[lints]
+workspace = true

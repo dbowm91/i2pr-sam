@@ -1,0 +1,297 @@
+crates/i2pr-sam-blocking/src/lib.rs::BlockingClient field pub struct BlockingClient {
+crates/i2pr-sam-blocking/src/lib.rs::BlockingDatagramSession field pub struct BlockingDatagramSession {
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant #[error("blocking SAM calls cannot run inside a Tokio runtime")]
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant #[error("blocking facade setup failed: {0}")]
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant #[error("blocking stream operation timed out")]
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant #[error(transparent)]
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant NestedRuntime
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant Runtime(#[from] io::Error)
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant Sam(#[from] SamError)
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant Timeout
+crates/i2pr-sam-blocking/src/lib.rs::BlockingError variant pub enum BlockingError {
+crates/i2pr-sam-blocking/src/lib.rs::BlockingSharedChild field pub struct BlockingSharedChild {
+crates/i2pr-sam-blocking/src/lib.rs::BlockingSharedSession field pub struct BlockingSharedSession {
+crates/i2pr-sam-blocking/src/lib.rs::BlockingStream field pub struct BlockingStream {
+crates/i2pr-sam-blocking/src/lib.rs::BlockingStreamSession field pub struct BlockingStreamSession {
+crates/i2pr-sam-blocking/src/lib.rs::pub enum BlockingError {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn accept(&self) -> Result<BlockingStream, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn add_child( &self, id: &str, style: SessionStyle, options: &[(String, String)], ) -> Result<BlockingSharedChild, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn close(&self) -> Result<(), BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn connect( &self, destination: &str, from_port: Option<u16>, to_port: Option<u16>, ) -> Result<BlockingStream, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn connect(config: ClientConfig) -> Result<Self, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn connect_endpoint(endpoint: SocketAddr) -> Result<Self, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn create_datagram_session( &self, destination: &str, id: &str, style: SessionStyle, options: &[(String, String)], ) -> Result<BlockingDatagramSession, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn create_shared_session( &self, destination: &str, id: &str, dialect: SharedDialect, options: &[(String, String)], ) -> Result<BlockingSharedSession, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn create_stream_session( &self, destination: &str, id: &str, options: &[(String, String)], ) -> Result<BlockingStreamSession, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn generate_destination( &self, signature_type: Option<u16>, ) -> Result<(String, i2pr_sam::SecretDestination), BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn id(&self) -> &str {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn lookup(&self, name: &str) -> Result<String, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn recv(&self) -> Result<ReceivedDatagram, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn recv_datagram(&self) -> Result<ReceivedDatagram, BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn remove_child(&self, id: &str) -> Result<(), BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn send( &self, destination: &str, payload: &[u8], from_port: Option<u16>, to_port: Option<u16>, ) -> Result<(), BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn send_datagram( &self, destination: &str, payload: &[u8], from_port: Option<u16>, to_port: Option<u16>, ) -> Result<(), BlockingError> {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn set_io_timeout(&mut self, timeout: Duration) {
+crates/i2pr-sam-blocking/src/lib.rs::pub fn set_recv_timeout(&mut self, duration: Duration) {
+crates/i2pr-sam-blocking/src/lib.rs::pub struct BlockingClient {
+crates/i2pr-sam-blocking/src/lib.rs::pub struct BlockingDatagramSession {
+crates/i2pr-sam-blocking/src/lib.rs::pub struct BlockingSharedChild {
+crates/i2pr-sam-blocking/src/lib.rs::pub struct BlockingSharedSession {
+crates/i2pr-sam-blocking/src/lib.rs::pub struct BlockingStream {
+crates/i2pr-sam-blocking/src/lib.rs::pub struct BlockingStreamSession {
+crates/i2pr-sam-proto/src/lib.rs::AuthenticatedDatagram field pub from_port: Port
+crates/i2pr-sam-proto/src/lib.rs::AuthenticatedDatagram field pub payload: Vec<u8>
+crates/i2pr-sam-proto/src/lib.rs::AuthenticatedDatagram field pub source: Destination
+crates/i2pr-sam-proto/src/lib.rs::AuthenticatedDatagram field pub struct AuthenticatedDatagram {
+crates/i2pr-sam-proto/src/lib.rs::AuthenticatedDatagram field pub to_port: Port
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant DatagramSend
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant DestGenerate
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant Hello
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant NamingLookup
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant Ping
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant Pong
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant RawSend
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant SessionAdd
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant SessionCreate
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant SessionRemove
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant SessionStatus
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant StreamAccept
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant StreamConnect
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant StreamForward
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant StreamStatus
+crates/i2pr-sam-proto/src/lib.rs::CommandKind variant pub enum CommandKind {
+crates/i2pr-sam-proto/src/lib.rs::Field field pub key: String
+crates/i2pr-sam-proto/src/lib.rs::Field field pub struct Field {
+crates/i2pr-sam-proto/src/lib.rs::Field field pub value: String
+crates/i2pr-sam-proto/src/lib.rs::Line field pub fields: Vec<Field>
+crates/i2pr-sam-proto/src/lib.rs::Line field pub struct Line {
+crates/i2pr-sam-proto/src/lib.rs::Line field pub trailing: Option<String>
+crates/i2pr-sam-proto/src/lib.rs::Line field pub words: Vec<String>
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant DuplicateKey
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant Empty
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant InvalidEscape
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant InvalidLineEnding
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant InvalidToken
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant InvalidUtf8
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant LimitExceeded
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant TooLong
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant TooManyTokens
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant UnterminatedQuote
+crates/i2pr-sam-proto/src/lib.rs::ParseError variant pub enum ParseError {
+crates/i2pr-sam-proto/src/lib.rs::Phase variant Child
+crates/i2pr-sam-proto/src/lib.rs::Phase variant Closed
+crates/i2pr-sam-proto/src/lib.rs::Phase variant PreHello
+crates/i2pr-sam-proto/src/lib.rs::Phase variant SessionControl
+crates/i2pr-sam-proto/src/lib.rs::Phase variant SharedOwner
+crates/i2pr-sam-proto/src/lib.rs::Phase variant StreamData
+crates/i2pr-sam-proto/src/lib.rs::Phase variant Utility
+crates/i2pr-sam-proto/src/lib.rs::Phase variant pub enum Phase {
+crates/i2pr-sam-proto/src/lib.rs::ProtocolState field pub struct ProtocolState {
+crates/i2pr-sam-proto/src/lib.rs::RawDatagram field pub from_port: Port
+crates/i2pr-sam-proto/src/lib.rs::RawDatagram field pub payload: Vec<u8>
+crates/i2pr-sam-proto/src/lib.rs::RawDatagram field pub protocol: I2pProtocol
+crates/i2pr-sam-proto/src/lib.rs::RawDatagram field pub struct RawDatagram {
+crates/i2pr-sam-proto/src/lib.rs::RawDatagram field pub to_port: Port
+crates/i2pr-sam-proto/src/lib.rs::ReceivedDatagram variant Authenticated(AuthenticatedDatagram)
+crates/i2pr-sam-proto/src/lib.rs::ReceivedDatagram variant Raw(RawDatagram)
+crates/i2pr-sam-proto/src/lib.rs::ReceivedDatagram variant Unverified(UnverifiedDatagram3)
+crates/i2pr-sam-proto/src/lib.rs::ReceivedDatagram variant pub enum ReceivedDatagram {
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub authentication: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub datagram2: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub datagram3: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub datagram: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub naming_lookup_options: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub negotiated_version: Option<SamVersion>
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub ping_pong: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub raw: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub session_add_remove: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub shared_master: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub shared_primary: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub stream: Support
+crates/i2pr-sam-proto/src/lib.rs::SamCapabilities field pub struct SamCapabilities {
+crates/i2pr-sam-proto/src/lib.rs::SamCommand field pub fields: Vec<Field>
+crates/i2pr-sam-proto/src/lib.rs::SamCommand field pub kind: CommandKind
+crates/i2pr-sam-proto/src/lib.rs::SamCommand field pub struct SamCommand {
+crates/i2pr-sam-proto/src/lib.rs::SamCommand field pub trailing: Option<String>
+crates/i2pr-sam-proto/src/lib.rs::SamReply field pub command: String
+crates/i2pr-sam-proto/src/lib.rs::SamReply field pub fields: Vec<Field>
+crates/i2pr-sam-proto/src/lib.rs::SamReply field pub result: Option<SamResult>
+crates/i2pr-sam-proto/src/lib.rs::SamReply field pub struct SamReply {
+crates/i2pr-sam-proto/src/lib.rs::SamReply field pub subcommand: String
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant CantReachPeer
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant DuplicateDestination
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant DuplicateId
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant InvalidId
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant InvalidKey
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant KeyNotFound
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant Ok
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant PeerNotFound
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant Timeout
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant Unknown(String)
+crates/i2pr-sam-proto/src/lib.rs::SamResult variant pub enum SamResult {
+crates/i2pr-sam-proto/src/lib.rs::SamVersion field pub major: u8
+crates/i2pr-sam-proto/src/lib.rs::SamVersion field pub minor: u8
+crates/i2pr-sam-proto/src/lib.rs::SamVersion field pub struct SamVersion {
+crates/i2pr-sam-proto/src/lib.rs::SessionStyle variant Datagram
+crates/i2pr-sam-proto/src/lib.rs::SessionStyle variant Datagram2
+crates/i2pr-sam-proto/src/lib.rs::SessionStyle variant Datagram3
+crates/i2pr-sam-proto/src/lib.rs::SessionStyle variant Raw
+crates/i2pr-sam-proto/src/lib.rs::SessionStyle variant Stream
+crates/i2pr-sam-proto/src/lib.rs::SessionStyle variant pub enum SessionStyle {
+crates/i2pr-sam-proto/src/lib.rs::SharedDialect variant Master
+crates/i2pr-sam-proto/src/lib.rs::SharedDialect variant Primary
+crates/i2pr-sam-proto/src/lib.rs::SharedDialect variant pub enum SharedDialect {
+crates/i2pr-sam-proto/src/lib.rs::Support variant Supported
+crates/i2pr-sam-proto/src/lib.rs::Support variant Unknown
+crates/i2pr-sam-proto/src/lib.rs::Support variant Unsupported
+crates/i2pr-sam-proto/src/lib.rs::Support variant pub enum Support {
+crates/i2pr-sam-proto/src/lib.rs::UnverifiedDatagram3 field pub from_port: Port
+crates/i2pr-sam-proto/src/lib.rs::UnverifiedDatagram3 field pub payload: Vec<u8>
+crates/i2pr-sam-proto/src/lib.rs::UnverifiedDatagram3 field pub source_hash: UnverifiedSourceHash
+crates/i2pr-sam-proto/src/lib.rs::UnverifiedDatagram3 field pub struct UnverifiedDatagram3 {
+crates/i2pr-sam-proto/src/lib.rs::UnverifiedDatagram3 field pub to_port: Port
+crates/i2pr-sam-proto/src/lib.rs::pub const MAX_DESTINATION_BYTES: usize = 8 * 1024;
+crates/i2pr-sam-proto/src/lib.rs::pub const MAX_KEY_BYTES: usize = 128;
+crates/i2pr-sam-proto/src/lib.rs::pub const MAX_LINE_BYTES: usize = 16 * 1024;
+crates/i2pr-sam-proto/src/lib.rs::pub const MAX_TOKENS: usize = 128;
+crates/i2pr-sam-proto/src/lib.rs::pub const MAX_VALUE_BYTES: usize = 8 * 1024;
+crates/i2pr-sam-proto/src/lib.rs::pub const V3_0: Self = Self { major: 3, minor: 0 };
+crates/i2pr-sam-proto/src/lib.rs::pub const V3_1: Self = Self { major: 3, minor: 1 };
+crates/i2pr-sam-proto/src/lib.rs::pub const V3_3: Self = Self { major: 3, minor: 3 };
+crates/i2pr-sam-proto/src/lib.rs::pub enum CommandKind {
+crates/i2pr-sam-proto/src/lib.rs::pub enum ParseError {
+crates/i2pr-sam-proto/src/lib.rs::pub enum Phase {
+crates/i2pr-sam-proto/src/lib.rs::pub enum ReceivedDatagram {
+crates/i2pr-sam-proto/src/lib.rs::pub enum SamResult {
+crates/i2pr-sam-proto/src/lib.rs::pub enum SessionStyle {
+crates/i2pr-sam-proto/src/lib.rs::pub enum SharedDialect {
+crates/i2pr-sam-proto/src/lib.rs::pub enum Support {
+crates/i2pr-sam-proto/src/lib.rs::pub fn as_bytes(&self) -> &[u8; 32] {
+crates/i2pr-sam-proto/src/lib.rs::pub fn as_str(&self) -> &str {
+crates/i2pr-sam-proto/src/lib.rs::pub fn child_added(&mut self) -> Result<(), ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn close(&mut self) {
+crates/i2pr-sam-proto/src/lib.rs::pub fn expose(&self) -> &str {
+crates/i2pr-sam-proto/src/lib.rs::pub fn field(&self, key: &str) -> Option<&str> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn from_line(line: &Line) -> Result<Self, ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn get(self) -> u16 {
+crates/i2pr-sam-proto/src/lib.rs::pub fn get(self) -> u8 {
+crates/i2pr-sam-proto/src/lib.rs::pub fn hello_succeeded(&mut self) -> Result<(), ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn new(bytes: [u8; 32]) -> Self {
+crates/i2pr-sam-proto/src/lib.rs::pub fn new(value: impl Into<String>) -> Result<Self, ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn new(value: u16) -> Self {
+crates/i2pr-sam-proto/src/lib.rs::pub fn new(value: u8) -> Result<Self, ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn parse(value: &str) -> Self {
+crates/i2pr-sam-proto/src/lib.rs::pub fn parse_line(input: &[u8]) -> Result<Line, ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn phase(&self) -> Phase {
+crates/i2pr-sam-proto/src/lib.rs::pub fn required(&self, key: &str) -> Result<&str, ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn serialize(&self) -> Result<String, ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn session_created(&mut self) -> Result<(), ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn shared_owner_created(&mut self) -> Result<(), ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub fn stream_connected(&mut self) -> Result<(), ParseError> {
+crates/i2pr-sam-proto/src/lib.rs::pub struct AuthenticatedDatagram {
+crates/i2pr-sam-proto/src/lib.rs::pub struct Destination(String);
+crates/i2pr-sam-proto/src/lib.rs::pub struct Field {
+crates/i2pr-sam-proto/src/lib.rs::pub struct I2pProtocol(u8);
+crates/i2pr-sam-proto/src/lib.rs::pub struct Line {
+crates/i2pr-sam-proto/src/lib.rs::pub struct Port(u16);
+crates/i2pr-sam-proto/src/lib.rs::pub struct ProtocolState {
+crates/i2pr-sam-proto/src/lib.rs::pub struct RawDatagram {
+crates/i2pr-sam-proto/src/lib.rs::pub struct SamCapabilities {
+crates/i2pr-sam-proto/src/lib.rs::pub struct SamCommand {
+crates/i2pr-sam-proto/src/lib.rs::pub struct SamReply {
+crates/i2pr-sam-proto/src/lib.rs::pub struct SamVersion {
+crates/i2pr-sam-proto/src/lib.rs::pub struct SecretDestination(String);
+crates/i2pr-sam-proto/src/lib.rs::pub struct SessionId(String);
+crates/i2pr-sam-proto/src/lib.rs::pub struct UnverifiedDatagram3 {
+crates/i2pr-sam-proto/src/lib.rs::pub struct UnverifiedSourceHash([u8; 32]);
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub connect_timeout: Duration
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub control_timeout: Duration
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub credentials: Option<Credentials>
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub datagram_endpoint: SocketAddr
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub datagram_forward: DatagramForwardConfig
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub endpoint: SocketAddr
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub max_datagram_bytes: usize
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub max_frame_bytes: usize
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub max_version: SamVersion
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub min_version: SamVersion
+crates/i2pr-sam/src/lib.rs::ClientConfig field pub struct ClientConfig {
+crates/i2pr-sam/src/lib.rs::Credentials field pub password: String
+crates/i2pr-sam/src/lib.rs::Credentials field pub struct Credentials {
+crates/i2pr-sam/src/lib.rs::Credentials field pub username: String
+crates/i2pr-sam/src/lib.rs::DatagramForwardConfig field pub advertised_host: IpAddr
+crates/i2pr-sam/src/lib.rs::DatagramForwardConfig field pub bind_ip: IpAddr
+crates/i2pr-sam/src/lib.rs::DatagramForwardConfig field pub port: u16
+crates/i2pr-sam/src/lib.rs::DatagramForwardConfig field pub struct DatagramForwardConfig {
+crates/i2pr-sam/src/lib.rs::DatagramSession field pub struct DatagramSession {
+crates/i2pr-sam/src/lib.rs::FailureClass variant CancelledOrClosed
+crates/i2pr-sam/src/lib.rs::FailureClass variant CapabilityUnsupported
+crates/i2pr-sam/src/lib.rs::FailureClass variant ConfigurationPermanent
+crates/i2pr-sam/src/lib.rs::FailureClass variant ProtocolPermanent
+crates/i2pr-sam/src/lib.rs::FailureClass variant RouterTransient
+crates/i2pr-sam/src/lib.rs::FailureClass variant TransportTransient
+crates/i2pr-sam/src/lib.rs::FailureClass variant pub enum FailureClass {
+crates/i2pr-sam/src/lib.rs::ReconnectPolicy field pub initial_backoff: Duration
+crates/i2pr-sam/src/lib.rs::ReconnectPolicy field pub max_attempts: u32
+crates/i2pr-sam/src/lib.rs::ReconnectPolicy field pub max_backoff: Duration
+crates/i2pr-sam/src/lib.rs::ReconnectPolicy field pub max_elapsed: Duration
+crates/i2pr-sam/src/lib.rs::ReconnectPolicy field pub struct ReconnectPolicy {
+crates/i2pr-sam/src/lib.rs::SamClient field pub struct SamClient {
+crates/i2pr-sam/src/lib.rs::SamError variant #[error("SAM bridge rejected the operation: {0}")]
+crates/i2pr-sam/src/lib.rs::SamError variant #[error("SAM operation timed out")]
+crates/i2pr-sam/src/lib.rs::SamError variant #[error("SAM transport failed: {0}")]
+crates/i2pr-sam/src/lib.rs::SamError variant #[error("client or session is closed")]
+crates/i2pr-sam/src/lib.rs::SamError variant #[error("invalid SAM protocol response: {0}")]
+crates/i2pr-sam/src/lib.rs::SamError variant #[error("name was not found by the SAM bridge")]
+crates/i2pr-sam/src/lib.rs::SamError variant Closed
+crates/i2pr-sam/src/lib.rs::SamError variant Io(#[from] std::io::Error)
+crates/i2pr-sam/src/lib.rs::SamError variant NameNotFound
+crates/i2pr-sam/src/lib.rs::SamError variant Protocol(#[from] i2pr_sam_proto::ParseError)
+crates/i2pr-sam/src/lib.rs::SamError variant Rejected(String)
+crates/i2pr-sam/src/lib.rs::SamError variant Timeout
+crates/i2pr-sam/src/lib.rs::SamError variant pub enum SamError {
+crates/i2pr-sam/src/lib.rs::SamStream field pub struct SamStream {
+crates/i2pr-sam/src/lib.rs::SharedChild field pub struct SharedChild {
+crates/i2pr-sam/src/lib.rs::SharedSession field pub struct SharedSession {
+crates/i2pr-sam/src/lib.rs::StreamSession field pub struct StreamSession {
+crates/i2pr-sam/src/lib.rs::pub async fn accept(&self) -> Result<SamStream, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn add_child( &self, id: &str, style: SessionStyle, options: &[(String, String)], ) -> Result<SharedChild, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn capabilities(&self) -> SamCapabilities {
+crates/i2pr-sam/src/lib.rs::pub async fn close(&self) {
+crates/i2pr-sam/src/lib.rs::pub async fn connect( &self, destination: &str, from_port: Option<u16>, to_port: Option<u16>, ) -> Result<SamStream, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn connect(config: ClientConfig) -> Result<Self, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn connect_with_policy( config: ClientConfig, policy: ReconnectPolicy, ) -> Result<Self, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn create_datagram_session( &self, destination: &str, id: &str, style: SessionStyle, options: &[(String, String)], ) -> Result<DatagramSession, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn create_shared_session( &self, destination: &str, id: &str, dialect: SharedDialect, options: &[(String, String)], ) -> Result<SharedSession, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn create_stream_session( &self, destination: &str, id: &str, options: &[(String, String)], ) -> Result<StreamSession, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn generate_destination( &self, signature_type: Option<u16>, ) -> Result<(String, SecretDestination), SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn lookup(&self, name: &str) -> Result<String, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn recv(&self) -> Result<ReceivedDatagram, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn recv_datagram(&self) -> Result<ReceivedDatagram, SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn remove_child(&self, id: &str) -> Result<(), SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn send( &self, destination: &str, payload: &[u8], from_port: Option<u16>, to_port: Option<u16>, ) -> Result<(), SamError> {
+crates/i2pr-sam/src/lib.rs::pub async fn send_datagram( &self, destination: &str, payload: &[u8], from_port: Option<u16>, to_port: Option<u16>, ) -> Result<(), SamError> {
+crates/i2pr-sam/src/lib.rs::pub enum FailureClass {
+crates/i2pr-sam/src/lib.rs::pub enum SamError {
+crates/i2pr-sam/src/lib.rs::pub fn bounded( max_attempts: u32, initial_backoff: Duration, max_backoff: Duration, max_elapsed: Duration, ) -> Result<Self, SamError> {
+crates/i2pr-sam/src/lib.rs::pub fn classify_failure(error: &SamError) -> FailureClass {
+crates/i2pr-sam/src/lib.rs::pub fn destination(&self) -> &str {
+crates/i2pr-sam/src/lib.rs::pub fn dialect(&self) -> SharedDialect {
+crates/i2pr-sam/src/lib.rs::pub fn expose(&self) -> &str {
+crates/i2pr-sam/src/lib.rs::pub fn id(&self) -> &str {
+crates/i2pr-sam/src/lib.rs::pub fn is_open(&self) -> bool {
+crates/i2pr-sam/src/lib.rs::pub fn new(endpoint: SocketAddr) -> Self {
+crates/i2pr-sam/src/lib.rs::pub fn remote_destination(&self) -> Option<&str> {
+crates/i2pr-sam/src/lib.rs::pub fn style(&self) -> &str {
+crates/i2pr-sam/src/lib.rs::pub fn style(&self) -> SessionStyle {
+crates/i2pr-sam/src/lib.rs::pub struct ClientConfig {
+crates/i2pr-sam/src/lib.rs::pub struct Credentials {
+crates/i2pr-sam/src/lib.rs::pub struct DatagramForwardConfig {
+crates/i2pr-sam/src/lib.rs::pub struct DatagramSession {
+crates/i2pr-sam/src/lib.rs::pub struct ReconnectPolicy {
+crates/i2pr-sam/src/lib.rs::pub struct SamClient {
+crates/i2pr-sam/src/lib.rs::pub struct SamStream {
+crates/i2pr-sam/src/lib.rs::pub struct SecretDestination(String);
+crates/i2pr-sam/src/lib.rs::pub struct SharedChild {
+crates/i2pr-sam/src/lib.rs::pub struct SharedSession {
+crates/i2pr-sam/src/lib.rs::pub struct StreamSession {
+crates/i2pr-sam/src/lib.rs::pub use i2pr_sam_proto as proto;

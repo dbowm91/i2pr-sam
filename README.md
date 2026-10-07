@@ -7,7 +7,10 @@ The project is intentionally separate from the `dbowm91/i2pr` router. i2pr owns 
 **client** side: wire protocol/state, client sessions, router interoperability, language
 bindings, and eventually a standalone tunnel manager/daemon.
 
-Current status: **planning foundation only; implementation has not started**.
+Current status: **pre-1.0 implementation foundation**. The protocol codec, async client,
+blocking facade, datagram transport, and shared-session controls are implemented. Java
+I2P/i2pd/i2pr live-router qualification has not yet been run in this environment; see the
+milestone closure records for exact boundaries.
 
 ## Target shape
 
@@ -48,6 +51,18 @@ The initial reference set includes:
   API/behavior references only.
 
 The exact pinned revisions used for implementation evidence are frozen by Milestone 001.
+
+## Workspace crates
+
+- `i2pr-sam-proto` contains bounded runtime-neutral SAM syntax, typed protocol values,
+  state legality, capabilities, and distinct authenticated/unverified/raw datagram types.
+- `i2pr-sam` is the canonical Tokio async client for HELLO, Destination generation,
+  naming, STREAM, forwarded UDP datagrams, and shared-owner child lifecycle.
+- `i2pr-sam-blocking` is a synchronous facade over the async crate. Calls made from an
+  existing Tokio runtime return a typed `NestedRuntime` error.
+
+The implementation is pre-1.0 and not published. Use the async or blocking crate for
+application code; see `docs/client-usage.md` for examples and lifecycle limits.
 
 ## License
 

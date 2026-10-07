@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "i2pr-sam conformance probe output",
+  "type": "object",
+  "required": ["router", "router_version_or_sha", "endpoint", "negotiated_sam_version", "rows"],
+  "properties": {
+    "router": { "type": "string" },
+    "router_version_or_sha": { "type": "string" },
+    "endpoint": { "type": "string" },
+    "negotiated_sam_version": { "type": ["string", "null"] },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["feature", "result", "notes"],
+        "properties": {
+          "feature": { "type": "string" },
+          "dialect": { "type": "string" },
+          "result": { "enum": ["probe_ok", "rejected_or_unsupported", "failed", "not_run"] },
+          "notes": { "type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
