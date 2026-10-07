@@ -1,0 +1,291 @@
+# SAM Library Roadmap
+
+Status: active.
+
+Long-term references:
+
+- `plans/000-long-term-specification.md`
+- `plans/001-terminology-and-domain-model.md`
+- `plans/002-long-term-roadmap.md`
+
+Related ADRs:
+
+- `plans/adrs/ADR-0001-clean-room-reference-and-provenance-policy.md`
+- `plans/adrs/ADR-0002-layered-client-runtime-and-bindings-ownership.md`
+
+External contracts:
+
+- official SAM v3 documentation: <https://geti2p.net/en/docs/api/samv3>
+- i2pr portable adapter handoff:
+  <https://github.com/dbowm91/i2pr/blob/main/specs/references/portable-service-tunnel-sam-adapter-handoff.md>
+
+## 1. Purpose and ownership boundary
+
+This workstream owns the reusable client-side SAM implementation: protocol/state,
+connections, sessions, router compatibility, Rust API, and the foundational conformance
+harness.
+
+It does not own an I2P router, I2CP implementation, I2P Streaming implementation, or
+service-profile/privacy policy already owned by i2pr's portable service-tunnel core.
+
+## 2. Work classification
+
+### Invariants
+
+- clean-room provenance;
+- bounded parsing/allocation/queues;
+- typed source-authentication semantics;
+- explicit control-to-data STREAM transition;
+- capability model distinct from negotiated version;
+- exact close/cancellation ownership;
+- no secret leakage in logs/errors.
+
+### Capabilities
+
+- Destination/naming;
+- STREAM;
+- DATAGRAM/RAW/DATAGRAM2/DATAGRAM3;
+- shared-Destination child sessions;
+- blocking facade after async semantics are proven.
+
+### Infrastructure
+
+- codec/state-machine crate;
+- async transport/session machinery;
+- router-profile/capability layer;
+- deterministic mock bridge;
+- external conformance harness.
+
+### Polish
+
+- ergonomic builders;
+- diagnostics;
+- examples;
+- packaging/publication.
+
+## 3. Non-goals
+
+Initial foundation milestones do not:
+
+- implement a SAM server;
+- implement I2CP/Streaming internally;
+- publish crates;
+- ship Python/C bindings;
+- ship a daemon/WebUI;
+- consume i2pr service-tunnel policy yet;
+- assume SAM 3.3 version negotiation means all 3.3 features work;
+- hide DATAGRAM3's unauthenticated source behind an authenticated address type.
+
+## 4. Current state
+
+The repository is new and contains no implementation.
+
+Current protocol reality relevant to the first line:
+
+- official SAM documentation describes current v3 syntax, PRIMARY sessions,
+  DATAGRAM2, and DATAGRAM3;
+- deployed routers do not expose those capabilities uniformly;
+- i2pd's 2026 SAM 3.3 compatibility work retained `MASTER` and explicitly did not add
+  `PRIMARY`, while other 3.3 pieces were reported working;
+- the official specification itself notes i2pd/I2P+ naming differences;
+- i2pr has its own SAM-server extension work, but this repository treats i2pr as one
+  interoperability target rather than a privileged wire dialect;
+- i2pr has already defined the service-tunnel adapter handoff this repository will
+  eventually consume.
+
+Milestone 001 must pin exact current spec/router/library reference revisions before code.
+
+## 5. Target architecture
+
+Initial workspace target:
+
+```text
+crates/i2pr-sam-proto
+  bounded command/reply codecs + state legality
+            |
+            v
+crates/i2pr-sam
+  canonical async client
+  capabilities + destination/naming + sessions
+            |
+            +--> later blocking / C / Python
+            |
+            +--> later service-tunnel adapter
+                       |
+                       v
+                    daemon
+```
+
+The exact later crate split is not frozen until those milestones are planned.
+
+## 6. Dependency graph
+
+```text
+001 protocol/reference/capability foundation
+  |
+  v
+002 async client + Destination/NAMING/STREAM
+  |
+  v
+003 datagram families + shared sessions + live router interop
+  |
+  v
+004 blocking facade + resilience + conformance/public API stabilization
+  |
+  +--> 005 foreign-language bindings            [future]
+  |
+  +--> 006 service-tunnel adapter               [future; i2pr contract]
+          |
+          v
+        007 daemon/config/management             [future]
+          |
+          v
+        008 CLI/WebUI/sidecar packaging          [future]
+```
+
+001→004 are hard dependencies. The i2pr portable-core API is an interface dependency for
+006, not for the base SAM client.
+
+## 7. Milestones
+
+### 001 — Clean-room protocol and capability foundation
+
+Class: invariant + infrastructure.
+
+Objective: freeze references; create the Rust workspace/protocol core; implement bounded
+SAM line syntax, typed command/reply vocabulary, version negotiation model, state legality,
+and a capability representation that does not equate version with feature support.
+
+Dependencies: none.
+
+Exit: protocol crate is socket-free; normative/reference freeze exists; deterministic
+codec/state tests and negative bounds tests pass.
+
+### 002 — Async client, Destination/NAMING, and STREAM foundation
+
+Class: capability + infrastructure.
+
+Objective: establish the canonical async Rust API and complete ordinary STREAM client
+semantics over real SAM bridges.
+
+Dependency: 001.
+
+Exit: HELLO, DEST, NAMING, ordinary STREAM CREATE/CONNECT/ACCEPT and close/cancel semantics
+work against deterministic harness plus at least Java I2P and one second router.
+
+### 003 — Datagram and shared-Destination interoperability
+
+Class: capability + invariant.
+
+Objective: complete DATAGRAM, RAW, DATAGRAM2, DATAGRAM3 and shared PRIMARY/MASTER
+subsessions while preserving source-authentication distinctions.
+
+Dependency: 002.
+
+Exit: live Java/i2pd/i2pr matrix is recorded; shared STREAM/datagram children preserve one
+Destination; dialect fallback is evidence-driven and centralized.
+
+### 004 — Runtime facades, resilience, conformance, and API stabilization
+
+Class: infrastructure + polish + invariant.
+
+Objective: add blocking facade, bounded retry/reconnect behavior, deterministic bridge
+fault harness, long-running lifecycle tests, and the first reviewed public API baseline.
+
+Dependency: 003.
+
+Exit: foundation API is stable enough to design language bindings and the service-tunnel
+adapter without exposing protocol strings or runtime internals.
+
+### 005 — C ABI and Python bindings
+
+Future, unplanned implementation handoff.
+
+### 006 — i2pr service-tunnel adapter
+
+Future, unplanned implementation handoff. Consumes the public i2pr policy/filter core;
+does not copy it.
+
+### 007 — Tunnel daemon and management API
+
+Future, unplanned implementation handoff.
+
+### 008 — CLI/WebUI/sidecar packaging
+
+Future, unplanned implementation handoff.
+
+## 8. Cross-cutting requirements
+
+### Protocol and compatibility
+
+- preserve exact negotiated syntax rules;
+- track optional capability support independently;
+- centralize PRIMARY/MASTER and router quirks;
+- reject unknown/unsupported operations deterministically.
+
+### Security
+
+- named parser/frame/session/queue limits;
+- redacted secret-bearing types;
+- no peer-controlled panic;
+- DATAGRAM3 source is an unverified hash;
+- RAW has no source identity;
+- optional authentication/TLS never silently downgrades when requested.
+
+### Concurrency/cancellation/recovery
+
+- all owned tasks have parents and cancellation;
+- no detached session tasks;
+- close is idempotent at the semantic layer;
+- retry/backoff is bounded and cancellation-aware;
+- shared-session owner loss deterministically invalidates children.
+
+### Performance/resource use
+
+- no unbounded read-until-newline;
+- no unbounded maps by router/session ID;
+- payload limits follow protocol constraints and local policy ceilings;
+- backpressure precedes memory growth.
+
+## 9. Verification strategy
+
+Use three evidence layers:
+
+1. pure protocol/property/negative tests;
+2. deterministic fake-bridge state/lifecycle/fault tests;
+3. live reference-router interoperability.
+
+The live matrix records router/version, negotiated SAM version, capability exercised,
+wire dialect, result, and known deviation.
+
+## 10. Risks and decision points
+
+- official documentation may lag deployed Datagram2/3 implementation status;
+- PRIMARY/MASTER compatibility is a semantic split under one nominal SAM version;
+- over-generalizing runtime support before the core API stabilizes could create needless
+  generic complexity;
+- datagram local-UDP forwarding is unsuitable for some embedded/private transports, so
+  the API must not assume it is the only receive model;
+- a high-level API that hides authentication differences could create application
+  security bugs.
+
+## 11. Completion definition
+
+This roadmap reaches foundation closure when 001–004 have closure records and the Rust
+API has live multi-router evidence for STREAM, datagrams, and shared sessions with bounded
+failure/recovery semantics.
+
+Bindings, tunnel manager, and UI are not required for foundation closure.
+
+## 12. Milestone status
+
+| Milestone | Status | Implementation plan | Closure | Blocker |
+|---|---|---|---|---|
+| 001 | ready | `plans/implementation/sam-library/001-clean-room-protocol-capability-foundation.md` | — | — |
+| 002 | blocked | `plans/implementation/sam-library/002-async-client-stream-foundation.md` | — | 001 |
+| 003 | blocked | `plans/implementation/sam-library/003-datagram-shared-session-interoperability.md` | — | 002 |
+| 004 | blocked | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | — | 003 |
+| 005 | proposed | — | — | 004 |
+| 006 | proposed | — | — | 004 + stable i2pr portable-core contract |
+| 007 | proposed | — | — | 006 |
+| 008 | proposed | — | — | 007 |
