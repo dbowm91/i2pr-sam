@@ -1,0 +1,224 @@
+name: live-interop
+
+# Manual only, on purpose.
+#
+# Live router qualification needs a real I2P bridge, unrestricted UDP egress, and a
+# provisioned router. Ordinary CI must never depend on external public I2P
+# availability, so this workflow has no push/pull_request/schedule trigger: a lane is
+# run when a human has a router in front of them and can say which router it was.
+#
+# Actions are pinned to full-length commit SHAs for supply-chain integrity: a mutable
+# tag can be repointed after review, and these workflows drive real router hosts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      router:
+        description: Router label, exactly as it appears in scripts/interop/routers.json
+        type: choice
+        default: i2pr
+        options:
+          - Java I2P
+          - i2pd
+          - i2pr
+      endpoint:
+        description: SAM bridge endpoint (HOST:PORT)
+        type: string
+        default: 127.0.0.1:7656
+      peer_endpoint:
+        description: Optional second SAM bridge endpoint (HOST:PORT) for peer-observed payload lanes. Empty means local-only lanes.
+        type: string
+        default: ""
+      plan:
+        description: Lane plan (must match scripts/interop/qualify.py PLAN_FEATURES)
+        type: choice
+        default: stream
+        options:
+          - full
+          - stream
+          - datagram
+          - shared
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-interop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    name: live-interop
+    # Router provisioning in scripts/interop/routers.json is Linux-shaped, and the
+    # harness invokes cargo and POSIX tooling directly. No Docker is used anywhere.
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      ROUTER: ${{ inputs.router }}
+      ENDPOINT: ${{ inputs.endpoint }}
+      PEER_ENDPOINT: ${{ inputs.peer_endpoint }}
+      PLAN: ${{ inputs.plan }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable (branch head; toolchain selectors are branches in this repo)
+        with:
+          toolchain: stable
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+
+      - name: Record dispatch parameters
+        run: |
+          set -euo pipefail
+          {
+            echo "### live-interop dispatch"
+            echo ""
+            echo "| input | value |"
+            echo "| --- | --- |"
+            echo "| router | \`$ROUTER\` |"
+            echo "| endpoint | \`$ENDPOINT\` |"
+            echo "| peer_endpoint | \`${PEER_ENDPOINT:-<empty>}\` |"
+            echo "| plan | \`$PLAN\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # UDP egress probe. This is reported, never enforced here: the probe exits 1 when
+      # UDP egress is restricted, and failing the job at this point would mask the
+      # harness's own "blocked" conclusion with a bare environment error. qualify.py
+      # re-runs the same probe and is the component that decides blocked vs. failed.
+      - name: "Prerequisite: UDP egress probe (informational)"
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          probe_rc=0
+          python3 scripts/interop/udp_egress_probe.py 2>&1 | tee udp-egress-probe.log || probe_rc=${PIPESTATUS[0]}
+          echo "udp_egress_probe exit code: $probe_rc"
+          echo "udp_egress_probe exit code: $probe_rc" >> "$GITHUB_STEP_SUMMARY"
+
+      # peer_endpoint is a sam-conformance runner flag, not a qualify.py flag. The
+      # harness builds the runner argv itself (scripts/interop/qualify.py
+      # runner_command) and always emits peer_endpoint: null, so there is nothing to
+      # pass through. Passing --peer-endpoint to qualify.py would be an argparse usage
+      # error (exit 2) and would turn a configuration detail into a false lane failure.
+      # Surface it honestly instead of inventing a flag.
+      - name: Note unplumbed peer_endpoint input
+        if: ${{ inputs.peer_endpoint != '' }}
+        run: |
+          set -euo pipefail
+          echo "::warning title=peer_endpoint not plumbed::scripts/interop/qualify.py has no --peer-endpoint flag; the runner is invoked without a peer bridge, so peer-observed payload lanes will be reported as skipped/peer_endpoint_unavailable."
+          echo "| peer_endpoint input | \`$PEER_ENDPOINT\` (not passed to qualify.py: no such flag) |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Qualify lanes against the router
+        id: qualify
+        run: |
+          set -euo pipefail
+          # The exit code is captured instead of propagated: this step must survive so
+          # that artifacts are validated and uploaded even when the lane failed, and so
+          # that exit 3 can be reported as blocked rather than as a generic failure.
+          qualify_rc=0
+          python3 scripts/interop/qualify.py \
+            --router "$ROUTER" \
+            --endpoint "$ENDPOINT" \
+            --plan "$PLAN" \
+            --json-summary artifacts/interop/run-summary.json \
+            2>&1 | tee qualify.log || qualify_rc=${PIPESTATUS[0]}
+          echo "exit_code=$qualify_rc" >> "$GITHUB_OUTPUT"
+          echo "qualify.py exit code: $qualify_rc" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate produced conformance artifacts
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          artifacts=(artifacts/interop/*-conformance.json)
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "::error title=No artifact::qualify.py produced no conformance artifact to validate"
+            exit 1
+          fi
+          failed=0
+          for artifact in "${artifacts[@]}"; do
+            echo "::group::validate $artifact"
+            if python3 scripts/check-conformance-artifact.py "$artifact"; then
+              echo "valid: $artifact"
+            else
+              echo "::error title=Invalid conformance artifact::$artifact"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$failed"
+
+      - name: Upload interop artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: interop-artifacts
+          path: artifacts/interop/**
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Exit-code policy, stated once so the contract is auditable:
+      #
+      #   0 = lanes ran and no row failed          -> success
+      #   3 = provisioning blocked, NO live row    -> neutral "blocked" conclusion
+      #   1 = at least one real `fail` row, or an
+      #       invalid artifact                    -> job failure
+      #   anything else = harness/runner error     -> job failure
+      #
+      # Rationale: a blocked lane is an environment fact (no router, no UDP egress, no
+      # binary), not evidence about protocol compatibility. Failing the job for it would
+      # make an unrunnable lane indistinguishable from a compatibility regression, and
+      # recording it as success would claim interoperability evidence that was never
+      # obtained. Exit 3 is therefore surfaced as a clearly labelled neutral conclusion,
+      # never as a pass. Exit 1 is a real `fail` row and fails the job.
+      - name: Classify qualify.py exit code
+        id: classify
+        env:
+          QUALIFY_EXIT_CODE: ${{ steps.qualify.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          echo "qualify.py exit code: $QUALIFY_EXIT_CODE"
+          case "$QUALIFY_EXIT_CODE" in
+            0)
+              conclusion=live-runs-completed
+              echo "::notice title=Live interop complete::qualify.py exit 0; lanes ran and reported no fail rows."
+              ;;
+            3)
+              conclusion=blocked
+              echo "::notice title=Live interop blocked::qualify.py exit 3 means the environment could not run live lanes (no router, restricted UDP egress, or missing router binary). This is NOT a pass and NOT a compatibility result."
+              ;;
+            1)
+              conclusion=compatibility-failure
+              echo "::error title=Live interop fail row::qualify.py exit 1 means a real fail row or an invalid artifact was produced."
+              ;;
+            *)
+              conclusion=harness-error
+              echo "::error title=Live interop harness error::qualify.py exit $QUALIFY_EXIT_CODE is outside its documented codes (0 pass, 1 fail, 3 blocked)."
+              ;;
+          esac
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Conclusion:** \`$conclusion\` (qualify.py exit \`$QUALIFY_EXIT_CODE\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce conclusion
+        env:
+          CONCLUSION: ${{ steps.classify.outputs.conclusion }}
+        run: |
+          set -euo pipefail
+          case "$CONCLUSION" in
+            live-runs-completed)
+              echo "live lanes completed"
+              ;;
+            blocked)
+              # Neutral by design: this lane produced no interoperability evidence.
+              # Anything that cites interoperability must read the artifacts, not this job.
+              echo "blocked: environment cannot run live lanes (no compatibility claim made)"
+              ;;
+            *)
+              echo "::error title=Live interop failed::conclusion=$CONCLUSION"
+              exit 1
+              ;;
+          esac

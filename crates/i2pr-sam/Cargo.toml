@@ -10,6 +10,7 @@ i2pr-sam-proto = { path = "../i2pr-sam-proto" }
 tokio = { version = "1", features = ["io-util", "net", "rt", "rt-multi-thread", "sync", "time", "macros"] }
 thiserror = "2"
 base64 = "0.22"
+sha2 = "0.10"
 serde_json = "1"
 
 [dev-dependencies]

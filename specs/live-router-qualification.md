@@ -1,16 +1,41 @@
 # Live-router qualification attempt
 
-Attempted 2026-10-07 with the repository conformance runner and pinned revisions from
-`references/sam-v3-reference-freeze.md`:
+Attempted 2026-10-07 by milestone 005 with the repository harness
+(`scripts/interop/qualify.py`) and the pinned revisions in
+`references/sam-v3-reference-freeze.md`.
+
+## Why no live lane could start
+
+Two independent environment prerequisites failed. Neither is a router protocol failure,
+and neither may be recorded as one.
+
+| Prerequisite | Probe | Observed |
+|---|---|---|
+| router binary | `i2pd` / `i2pr` on `PATH` | neither installed; Java I2P is not a single binary |
+| container runtime | `docker ps` | `permission denied` on `/var/run/docker.sock` |
+| bridge listener | TCP connect `127.0.0.1:7656` | refused; no process on 7656-7658 |
+| **UDP egress for peer transport** | `python3 scripts/interop/udp_egress_probe.py` | answers on `1.1.1.1:53` only; `443/UDP` and non-standard `34567/UDP` are silently dropped |
+
+The UDP result is the decisive blocker and is new information relative to milestone 004.
+A host that answers DNS but drops every UDP packet above port 1024 cannot run an I2P
+router at all: SSU peering uses random high UDP ports. Even a fully installed router would
+reseed and then fail to build a single tunnel, so no payload row could have passed.
+
+## Commands and results
 
 | Router | Invocation | Result |
 |---|---|---|
-| Java I2P | `rtk cargo run --locked -p i2pr-sam --bin sam-conformance -- --endpoint 127.0.0.1:7656 --router 'Java I2P' --router-version a629ec7c9c675dd252d005fb881efd92e8e6ba27` | Exit 2; connection refused |
-| i2pd | `rtk cargo run --locked -p i2pr-sam --bin sam-conformance -- --endpoint 127.0.0.1:7656 --router i2pd --router-version d147bb0fd6789c75dc1c4d70c4f79b151a552d53` | Exit 2; connection refused |
-| i2pr | `rtk cargo run --locked -p i2pr-sam --bin sam-conformance -- --endpoint 127.0.0.1:7656 --router i2pr --router-version 4f4e98f5a0241355af5099c73065088dede1b1de` | Exit 2; connection refused |
+| Java I2P | `python3 scripts/interop/qualify.py --router 'Java I2P' --endpoint 127.0.0.1:7656` | exit 3, `provisioning_udp_egress_blocked` (informational `provisioning_binary_missing`) |
+| i2pd | `python3 scripts/interop/qualify.py --router i2pd --endpoint 127.0.0.1:7656` | exit 3, `provisioning_binary_missing` |
+| i2pr | `python3 scripts/interop/qualify.py --router i2pr --endpoint 127.0.0.1:7656` | exit 3, `provisioning_binary_missing` |
 
-No live row is a pass. `ss -ltn` showed no listener on ports 7656–7658, `i2pd` was not
-installed, no router process was running, and access to the Docker daemon socket was
-denied. The repeated commands establish unavailable prerequisites, not router protocol
-failures. Repeat these probes in a router-enabled environment before claiming
-interoperability.
+Artifacts written by those runs validate against `specs/conformance.schema.json` and
+contain `not_run` rows with `pass=0` and `capability_passes=0`. Exit code 3 means "the lane
+could not be provisioned", never "the router failed a row".
+
+## What this record does not claim
+
+No live payload row is a pass. No negotiated SAM version was observed. No claim about
+Java I2P, i2pd, or i2pr wire behaviour is made here; the harness exists precisely so that
+such a claim can only be produced by an actual exchange. Milestone 011 carries the live
+payload matrix as its objective.

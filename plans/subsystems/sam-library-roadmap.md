@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: active — M005 foundation interoperability corrective ready; M006 verification/API corrective blocked on M005.
+Status: active — M005 and M006 executed and conditionally closed; M011 live payload qualification ready on a router-enabled host.
 
 Long-term references:
 
@@ -78,8 +78,10 @@ Initial foundation milestones do not:
 
 ## 4. Current state
 
-M001 is strictly closed. M002–M004 landed substantial implementation at
-`956238fcced742836833befaf6e748e97f435001` and are conditionally closed.
+M001 is strictly closed. M002–M006 are conditionally closed. M002–M004 landed substantial
+implementation at `956238fcced742836833befaf6e748e97f435001`; M005 and M006 corrected the
+protocol and reporting defects those closures named, and closed the verification, API, and
+CI debt.
 
 Implemented today:
 
@@ -89,18 +91,26 @@ Implemented today:
 - explicit MASTER/PRIMARY shared owner plus child add/remove;
 - blocking facade;
 - bounded initial bridge-connect retry;
-- mock/fault/lifecycle tests;
-- conformance executable and public-API snapshot.
+- ordinary v1/v2-compatible DATAGRAM/RAW control-socket send/receive, bounded and typed;
+- concrete shared-session identity (`NAMING LOOKUP NAME=ME` plus a canonical SHA-256 hash)
+  with per-subsession identity proof;
+- correct non-silent `STREAM ACCEPT` peer-identity framing;
+- mock/fault/lifecycle/cancellation/contention tests;
+- conformance runner whose rows require payload evidence, plus a schema and validator that
+  reject an overclaiming artifact;
+- router-enabled interop harness with provisioning probes and a per-router matrix;
+- blocking facade parity, typed public API, guard mutation self-tests, process-wide retry
+  admission, resource accounting, and hosted Linux/MSRV/macOS/Windows CI.
 
-The conditional closures are material, not administrative. No Java I2P, i2pd, or i2pr
-live payload row has passed yet; every attempted bridge connection was refused because no
-router was present in the implementation environment. The shared-session mock compares
-the stored request token `TRANSIENT`, not a concrete router-generated Destination.
-Ordinary v1/v2-compatible DATAGRAM/RAW control-socket modes planned by M003 are absent.
-Blocking parity is incomplete, resource qualification is narrow, and no hosted CI exists.
+The conditional closures are still material, and after M005/M006 they are material for one
+reason only: **no live Java I2P, i2pd, or i2pr payload row has ever passed.** The
+implementation host has no router binary, no container runtime access, and UDP egress
+restricted to port 53, which prevents SSU peering on random high ports and therefore
+prevents any router here from joining the network. Every protocol claim above is backed by
+deterministic mock evidence against the pinned specification, not by a live exchange.
 
-Therefore M005/M006 are corrective prerequisites before bindings or the portable
-service-tunnel adapter can become implementation-ready.
+M011 carries that residual. Until it runs, strict foundation closure - and therefore M007
+bindings and M008 adapter - stays out of reach by design.
 
 ## 5. Target architecture
 
@@ -145,15 +155,20 @@ The exact later crate split is not frozen until those milestones are planned.
   v
 006 verification/CI/public-API stabilization corrective
   |
-  +--> 007 foreign-language bindings            [future]
+  +--> 007 foreign-language bindings            [future; blocked on M011]
   |
-  +--> 008 service-tunnel adapter               [future; i2pr contract]
+  +--> 008 service-tunnel adapter               [future; blocked on M011; i2pr contract]
           |
           v
         009 daemon/config/management             [future]
           |
           v
         010 CLI/WebUI/sidecar packaging          [future]
+
+  011 live router payload qualification   [registered by M005/M006 closure review]
+    ^                                     |
+    |  strict foundation closure          |  unblocks M007 and M008
+    +-------------------------------------|
 ```
 
 M005 corrects the conditional wire/interoperability authority left by M002–M004. M006 is a
@@ -259,6 +274,21 @@ Future, unplanned implementation handoff.
 
 Future, unplanned implementation handoff.
 
+### 011 — Live router payload qualification
+
+Class: corrective qualification + infrastructure.
+
+Objective: produce the live multi-router payload matrix that M005 could not run, on a host
+where a router can actually join the I2P network.
+
+Dependency: provisioning, not implementation. Everything the lane needs - harness, runner,
+schema, validator, pins - exists and has been exercised in its blocked path.
+
+Exit: Java I2P plus at least one second router pass stream payload in both directions with
+peer-observable identity, datagram families pass with correct trust typing, and a shared
+subsession payload row proves one Destination across children. Only then can M002–M006 be
+reconciled additively to strict closure and M007/M008 unblock.
+
 ## 8. Cross-cutting requirements
 
 ### Protocol and compatibility
@@ -335,9 +365,10 @@ closure and must not begin implementation before M006 closes.
 | 002 | conditionally closed | `plans/implementation/sam-library/002-async-client-stream-foundation.md` | `plans/closure/sam-library/002-status.md` | corrected by 005/006 |
 | 003 | conditionally closed | `plans/implementation/sam-library/003-datagram-shared-session-interoperability.md` | `plans/closure/sam-library/003-status.md` | corrected by 005/006 |
 | 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | `plans/closure/sam-library/004-status.md` | corrected by 005/006 |
-| 005 | ready | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | — | — |
-| 006 | blocked | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | — | 005 closure |
-| 007 | proposed | — | — | 006 |
-| 008 | proposed | — | — | 006 + stable merged i2pr portable-core revision |
+| 005 | conditionally closed | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | `plans/closure/sam-library/005-status.md` | live payload matrix → 011 |
+| 006 | conditionally closed | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | `plans/closure/sam-library/006-status.md` | 005 strict closure → 011 |
+| 007 | proposed | — | — | 011 then strict 006 |
+| 008 | proposed | — | — | 007 certainty + stable merged i2pr portable-core revision |
 | 009 | proposed | — | — | 008 |
 | 010 | proposed | — | — | 009 |
+| 011 | ready on provisioning | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | — | host with router-capable UDP egress |

@@ -341,6 +341,34 @@ impl Destination {
     }
 }
 
+/// Canonical 32-byte hash of a concrete I2P Destination.
+///
+/// This is the value that may be published in conformance artifacts: it proves a
+/// specific linkability domain without ever exposing destination or key material.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct DestinationHash([u8; 32]);
+impl DestinationHash {
+    pub fn new(bytes: [u8; 32]) -> Self {
+        Self(bytes)
+    }
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0
+    }
+}
+impl fmt::Debug for DestinationHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "DestinationHash({self})")
+    }
+}
+impl fmt::Display for DestinationHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for byte in self.0 {
+            write!(f, "{byte:02x}")?;
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct SecretDestination(String);
 impl SecretDestination {
@@ -403,15 +431,126 @@ pub enum ReceivedDatagram {
     Raw(RawDatagram),
 }
 
+/// Header of a size-delimited datagram delivered on the SAM control socket.
+///
+/// Ordinary DATAGRAM1 and RAW sessions without a forwarding `PORT` receive data in the
+/// v1/v2-compatible form: a header line, then exactly `size` raw bytes with no base64
+/// framing. DATAGRAM2 and DATAGRAM3 never use this mechanism.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DatagramDelivery {
+    /// Authenticated source Destination. `None` for RAW, which has no source identity.
+    pub source: Option<Destination>,
+    pub from_port: Option<Port>,
+    pub to_port: Option<Port>,
+    /// Only present for RAW deliveries.
+    pub protocol: Option<I2pProtocol>,
+    pub size: usize,
+}
+
+impl DatagramDelivery {
+    fn parse(line: &Line, raw: bool) -> Result<Self, ParseError> {
+        let size: usize = line
+            .field("SIZE")
+            .ok_or(ParseError::InvalidToken)?
+            .parse()
+            .map_err(|_| ParseError::InvalidToken)?;
+        if size == 0 {
+            return Err(ParseError::InvalidToken);
+        }
+        let source = match line.field("DESTINATION") {
+            Some(text) if !raw => Some(Destination::new(text)?),
+            _ => None,
+        };
+        let port = |key: &str| -> Result<Option<Port>, ParseError> {
+            match line.field(key) {
+                None => Ok(None),
+                Some(text) => Ok(Some(Port::new(
+                    text.parse().map_err(|_| ParseError::InvalidToken)?,
+                ))),
+            }
+        };
+        let protocol = match line.field("PROTOCOL") {
+            None => None,
+            Some(text) => Some(I2pProtocol::new(
+                text.parse().map_err(|_| ParseError::InvalidToken)?,
+            )?),
+        };
+        if !raw && protocol.is_some() {
+            return Err(ParseError::InvalidToken);
+        }
+        Ok(Self {
+            source,
+            from_port: port("FROM_PORT")?,
+            to_port: port("TO_PORT")?,
+            protocol,
+            size,
+        })
+    }
+
+    /// Parse `<- DATAGRAM RECEIVED DESTINATION=.. SIZE=.. [FROM_PORT=..] [TO_PORT=..]`.
+    pub fn parse_datagram(line: &Line) -> Result<Self, ParseError> {
+        match (
+            line.words.first().map(String::as_str),
+            line.words.get(1).map(String::as_str),
+        ) {
+            (Some("DATAGRAM"), Some("RECEIVED")) => Self::parse(line, false),
+            _ => Err(ParseError::InvalidToken),
+        }
+    }
+
+    /// Parse `<- RAW RECEIVED SIZE=.. [FROM_PORT=..] [TO_PORT=..] [PROTOCOL=..]`.
+    pub fn parse_raw(line: &Line) -> Result<Self, ParseError> {
+        match (
+            line.words.first().map(String::as_str),
+            line.words.get(1).map(String::as_str),
+        ) {
+            (Some("RAW"), Some("RECEIVED")) => Self::parse(line, true),
+            _ => Err(ParseError::InvalidToken),
+        }
+    }
+}
+
+/// Classify a line read from a SAM control socket.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IncomingKind {
+    /// A `... REPLY` answer to a command this client sent, such as `NAMING REPLY`.
+    Reply,
+    /// A `... STATUS` answer, including router-originated post-`OK` notices.
+    Status,
+    /// Unsolicited `DATAGRAM RECEIVED`, followed by `SIZE` raw bytes.
+    DatagramDelivery,
+    /// Unsolicited `RAW RECEIVED`, followed by `SIZE` raw bytes.
+    RawDelivery,
+    /// Any other line the router originated, such as `STREAM RECEIVED` or `PONG`.
+    Asynchronous,
+}
+impl IncomingKind {
+    pub fn classify(line: &Line) -> Self {
+        match (
+            line.words.first().map(String::as_str),
+            line.words.get(1).map(String::as_str),
+        ) {
+            (Some("DATAGRAM"), Some("RECEIVED")) => Self::DatagramDelivery,
+            (Some("RAW"), Some("RECEIVED")) => Self::RawDelivery,
+            _ if line.words.get(1).map(String::as_str) == Some("REPLY") => Self::Reply,
+            _ if line.words.get(1).map(String::as_str) == Some("STATUS") => Self::Status,
+            _ => Self::Asynchronous,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SamResult {
     Ok,
     CantReachPeer,
     DuplicateId,
     DuplicateDestination,
+    I2pError,
     InvalidKey,
     InvalidId,
+    InvalidStyle,
     KeyNotFound,
+    LeaseSetNotFound,
     PeerNotFound,
     Timeout,
     Unknown(String),
@@ -423,13 +562,24 @@ impl SamResult {
             "CANT_REACH_PEER" => Self::CantReachPeer,
             "DUPLICATED_ID" => Self::DuplicateId,
             "DUPLICATED_DEST" => Self::DuplicateDestination,
+            "I2P_ERROR" => Self::I2pError,
             "INVALID_KEY" => Self::InvalidKey,
             "INVALID_ID" => Self::InvalidId,
+            "INVALID_STYLE" => Self::InvalidStyle,
             "KEY_NOT_FOUND" => Self::KeyNotFound,
+            "LEASESET_NOT_FOUND" => Self::LeaseSetNotFound,
             "PEER_NOT_FOUND" => Self::PeerNotFound,
             "TIMEOUT" => Self::Timeout,
             _ => Self::Unknown(value.to_owned()),
         }
+    }
+
+    /// True when the router states it does not implement the requested operation.
+    ///
+    /// This is a capability verdict, never a transient-failure verdict: unreachable
+    /// peers, expired leasesets, and timeouts are deliberately excluded.
+    pub fn is_unsupported_style(&self) -> bool {
+        matches!(self, Self::InvalidStyle | Self::InvalidId)
     }
 }
 
@@ -519,6 +669,23 @@ pub enum Support {
     Supported,
     Unsupported,
 }
+impl Support {
+    /// Stable artifact spelling. Never derives support from a negotiated version.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Unknown => "unknown",
+            Self::Supported => "supported",
+            Self::Unsupported => "unsupported",
+        }
+    }
+    pub fn parse(value: &str) -> Self {
+        match value {
+            "supported" => Self::Supported,
+            "unsupported" => Self::Unsupported,
+            _ => Self::Unknown,
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SamCapabilities {
@@ -534,6 +701,12 @@ pub struct SamCapabilities {
     pub naming_lookup_options: Support,
     pub authentication: Support,
     pub ping_pong: Support,
+    /// v1/v2-compatible control-socket datagram send/receive for ordinary DATAGRAM1.
+    pub datagram_direct: Support,
+    /// v1/v2-compatible control-socket send/receive for ordinary RAW.
+    pub raw_direct: Support,
+    /// `NAMING LOOKUP NAME=ME` identity resolution for the current session.
+    pub session_identity_lookup: Support,
 }
 impl Default for SamCapabilities {
     fn default() -> Self {
@@ -550,6 +723,9 @@ impl Default for SamCapabilities {
             naming_lookup_options: Support::Unknown,
             authentication: Support::Unknown,
             ping_pong: Support::Unknown,
+            datagram_direct: Support::Unknown,
+            raw_direct: Support::Unknown,
+            session_identity_lookup: Support::Unknown,
         }
     }
 }
@@ -561,6 +737,41 @@ pub enum SessionStyle {
     Raw,
     Datagram2,
     Datagram3,
+}
+impl SessionStyle {
+    pub fn as_wire(self) -> &'static str {
+        match self {
+            Self::Stream => "STREAM",
+            Self::Datagram => "DATAGRAM",
+            Self::Raw => "RAW",
+            Self::Datagram2 => "DATAGRAM2",
+            Self::Datagram3 => "DATAGRAM3",
+        }
+    }
+    /// Only ordinary DATAGRAM1 and RAW use the v1/v2-compatible control-socket modes.
+    ///
+    /// DATAGRAM2/3 and every shared subsession are excluded by specification, and this
+    /// predicate is the single place that exclusion is expressed.
+    pub fn supports_control_socket_datagram(self) -> bool {
+        matches!(self, Self::Datagram | Self::Raw)
+    }
+    /// DATAGRAM1/D2 authenticate their source; DATAGRAM3 does not; RAW has no source.
+    pub fn source_trust(self) -> DatagramSourceTrust {
+        match self {
+            Self::Datagram | Self::Datagram2 => DatagramSourceTrust::Authenticated,
+            Self::Datagram3 => DatagramSourceTrust::UnverifiedHash,
+            Self::Raw => DatagramSourceTrust::NoSource,
+            Self::Stream => DatagramSourceTrust::NotADatagram,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DatagramSourceTrust {
+    NotADatagram,
+    Authenticated,
+    UnverifiedHash,
+    NoSource,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -770,5 +981,151 @@ mod tests {
         assert_eq!(Port::new(65_535).get(), 65_535);
         assert_eq!(SessionId::new("safe-1").unwrap().as_str(), "safe-1");
         assert!(SessionId::new("bad id").is_err());
+    }
+
+    #[test]
+    fn control_socket_datagram_headers_are_parsed_with_trust_typing() {
+        // The header line and the size-delimited body arrive as separate reads, so the
+        // parser only ever sees the header line.
+        let datagram =
+            parse_line(b"DATAGRAM RECEIVED DESTINATION=peer SIZE=5 FROM_PORT=7 TO_PORT=9\n")
+                .unwrap();
+        assert_eq!(
+            IncomingKind::classify(&datagram),
+            IncomingKind::DatagramDelivery
+        );
+        let header = DatagramDelivery::parse_datagram(&datagram).unwrap();
+        assert_eq!(
+            header.source.as_ref().map(Destination::as_str),
+            Some("peer")
+        );
+        assert_eq!(header.from_port, Some(Port::new(7)));
+        assert_eq!(header.to_port, Some(Port::new(9)));
+        assert_eq!(header.protocol, None);
+        assert_eq!(header.size, 5);
+
+        let raw = parse_line(b"RAW RECEIVED SIZE=3 FROM_PORT=1 TO_PORT=2 PROTOCOL=18\n").unwrap();
+        assert_eq!(IncomingKind::classify(&raw), IncomingKind::RawDelivery);
+        let header = DatagramDelivery::parse_raw(&raw).unwrap();
+        assert_eq!(header.source, None, "RAW carries no source identity");
+        assert_eq!(header.protocol.map(I2pProtocol::get), Some(18));
+        assert_eq!(header.size, 3);
+
+        assert_eq!(
+            IncomingKind::classify(&parse_line(b"DATAGRAM STATUS RESULT=OK MESSAGE=1\n").unwrap()),
+            IncomingKind::Status
+        );
+        assert_eq!(
+            IncomingKind::classify(&parse_line(b"NAMING REPLY RESULT=OK VALUE=v\n").unwrap()),
+            IncomingKind::Reply
+        );
+        assert_eq!(
+            IncomingKind::classify(&parse_line(b"STREAM RECEIVED ID=a SIZE=1\n").unwrap()),
+            IncomingKind::Asynchronous
+        );
+    }
+
+    #[test]
+    fn control_socket_datagram_headers_reject_contradictory_metadata() {
+        // SIZE is mandatory and must be non-zero: it bounds the following raw bytes.
+        assert_eq!(
+            DatagramDelivery::parse_datagram(
+                &parse_line(b"DATAGRAM RECEIVED DESTINATION=p\n").unwrap()
+            ),
+            Err(ParseError::InvalidToken)
+        );
+        assert_eq!(
+            DatagramDelivery::parse_datagram(
+                &parse_line(b"DATAGRAM RECEIVED DESTINATION=p SIZE=0\n").unwrap()
+            ),
+            Err(ParseError::InvalidToken)
+        );
+        assert_eq!(
+            DatagramDelivery::parse_datagram(
+                &parse_line(b"DATAGRAM RECEIVED DESTINATION=p SIZE=notanumber\n").unwrap()
+            ),
+            Err(ParseError::InvalidToken)
+        );
+        // PROTOCOL belongs to RAW only; accepting it here would blur trust typing.
+        assert_eq!(
+            DatagramDelivery::parse_datagram(
+                &parse_line(b"DATAGRAM RECEIVED DESTINATION=p SIZE=1 PROTOCOL=18\n").unwrap()
+            ),
+            Err(ParseError::InvalidToken)
+        );
+        // RAW never carries a source destination.
+        assert_eq!(
+            DatagramDelivery::parse_raw(
+                &parse_line(b"RAW RECEIVED SIZE=1 DESTINATION=p\n").unwrap()
+            ),
+            Ok(DatagramDelivery {
+                source: None,
+                from_port: None,
+                to_port: None,
+                protocol: None,
+                size: 1
+            })
+        );
+        assert_eq!(
+            DatagramDelivery::parse_raw(&parse_line(b"RAW RECEIVED SIZE=1 PROTOCOL=6\n").unwrap()),
+            Err(ParseError::InvalidToken)
+        );
+        assert!(
+            DatagramDelivery::parse_raw(
+                &parse_line(b"DATAGRAM RECEIVED DESTINATION=p SIZE=1\n").unwrap()
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn only_ordinary_datagram_and_raw_use_the_v1_v2_direct_modes() {
+        assert!(SessionStyle::Datagram.supports_control_socket_datagram());
+        assert!(SessionStyle::Raw.supports_control_socket_datagram());
+        assert!(!SessionStyle::Datagram2.supports_control_socket_datagram());
+        assert!(!SessionStyle::Datagram3.supports_control_socket_datagram());
+        assert!(!SessionStyle::Stream.supports_control_socket_datagram());
+        assert_eq!(
+            SessionStyle::Datagram.source_trust(),
+            DatagramSourceTrust::Authenticated
+        );
+        assert_eq!(
+            SessionStyle::Datagram2.source_trust(),
+            DatagramSourceTrust::Authenticated
+        );
+        assert_eq!(
+            SessionStyle::Datagram3.source_trust(),
+            DatagramSourceTrust::UnverifiedHash
+        );
+        assert_eq!(
+            SessionStyle::Raw.source_trust(),
+            DatagramSourceTrust::NoSource
+        );
+    }
+
+    #[test]
+    fn unsupported_style_is_distinct_from_transient_failure() {
+        assert!(SamResult::parse("INVALID_STYLE").is_unsupported_style());
+        assert!(!SamResult::parse("CANT_REACH_PEER").is_unsupported_style());
+        assert!(!SamResult::parse("TIMEOUT").is_unsupported_style());
+        assert!(!SamResult::parse("KEY_NOT_FOUND").is_unsupported_style());
+        assert!(!SamResult::parse("PEER_NOT_FOUND").is_unsupported_style());
+        assert!(!SamResult::parse("I2P_ERROR").is_unsupported_style());
+        assert_eq!(
+            Support::parse(Support::Unsupported.as_str()),
+            Support::Unsupported
+        );
+        assert_eq!(Support::parse("supported"), Support::Supported);
+        assert_eq!(Support::parse("nonsense"), Support::Unknown);
+    }
+
+    #[test]
+    fn destination_hash_renders_canonical_hex() {
+        let hash = DestinationHash::new([0xab; 32]);
+        let text = hash.to_string();
+        assert_eq!(text.len(), 64);
+        assert!(text.chars().all(|c| c.is_ascii_hexdigit()));
+        assert_eq!(&text[..4], "abab");
+        assert!(format!("{hash:?}").contains(&text));
     }
 }

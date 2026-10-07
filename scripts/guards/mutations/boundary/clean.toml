@@ -1,0 +1,18 @@
+# Synthetic manifest for the protocol boundary guard self-test.
+#
+# Negative control: this manifest mirrors the shape of the real
+# `crates/i2pr-sam-proto/Cargo.toml` and must be accepted.
+
+[package]
+name = "i2pr-sam-proto-fixture"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Runtime-neutral fixture manifest with no runtime dependency"
+
+[dependencies]
+
+[dev-dependencies]
+
+[lints]
+workspace = true

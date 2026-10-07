@@ -27,13 +27,13 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | active corrective line | `plans/subsystems/sam-library-roadmap.md` | M005 ready; M006 blocked on M005 | M001 closed; M002–M004 remain conditionally closed. M005 closes live protocol/interoperability truth; M006 closes verification/CI/API-quality debt before downstream bindings/adapter work. |
+| SAM library foundation | corrective line complete; live lane blocked on provisioning | `plans/subsystems/sam-library-roadmap.md` | M011 ready on a router-enabled host | M001 closed; M002–M006 conditionally closed. M005 corrected the protocol and reporting defects; M006 closed verification/API/CI debt. The single remaining gate is live multi-router payload evidence, which M011 carries. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | State | Handoff | Dependencies |
 |---|---:|---|---|---|
-| SAM library | 005 | **ready** | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | none beyond existing M001–M004 implementation baseline |
+| SAM library | 011 | **ready on provisioning** | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | A host where `scripts/interop/udp_egress_probe.py` reports `i2p_router_udp_capable=true` and two routers can reach each other over the I2P network |
 
 ## Closed implementation plans
 
@@ -43,14 +43,14 @@ Canonical direction:
 | SAM library | 002 | conditionally closed | `plans/implementation/sam-library/002-async-client-stream-foundation.md` | Live router qualification |
 | SAM library | 003 | conditionally closed | `plans/implementation/sam-library/003-datagram-shared-session-interoperability.md` | Live router qualification and control-socket datagram modes |
 | SAM library | 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | Live router qualification and broader recovery evidence |
+| SAM library | 005 | conditionally closed | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | Live multi-router payload matrix; corrected in M011 |
+| SAM library | 006 | conditionally closed | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | M005 strict closure, i.e. M011 |
 
 Closure evidence is under `plans/closure/sam-library/`.
 
 ## Blocked registered corrective plans
 
-| Subsystem | Milestone | State | Handoff | Blocker |
-|---|---:|---|---|---|
-| SAM library | 006 | blocked | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | M005 closure |
+None. M005 and M006 both executed; neither remains blocked on another milestone.
 
 ## Future roadmap-only work
 
@@ -65,11 +65,17 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
   stable selected revision at implementation time.
 - M009 tunnel daemon/config/persistence/management API — depends on M008.
 - M010 CLI/WebUI/sidecar packaging — depends on M009.
+- M011 live router payload qualification — registered by M005/M006 closure review as the
+  successor that converts the conditional foundation closures to strict ones. It is the
+  single gate standing between the current state and strict M006 closure; M007 and M008
+  stay blocked until it runs.
 
 ## Active sequence
 
-`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(ready corrective) -> 006(blocked corrective)`
+`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> 011(ready on provisioning)`
 
-Bindings and the service-tunnel adapter are not implementation-ready until M006 closes.
-Protocol/version capability claims continue to require live evidence rather than inference
-from registration or negotiated version alone.
+Bindings and the service-tunnel adapter remain not implementation-ready. M006 is
+conditionally closed rather than closed, so the plan's own dependency rule keeps M007 and
+M008 blocked until M011 supplies the live payload matrix and M006 is reconciled additively
+to strict closure. Protocol/version capability claims continue to require live evidence
+rather than inference from registration or negotiated version alone.

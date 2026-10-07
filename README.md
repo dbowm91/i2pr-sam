@@ -7,10 +7,16 @@ The project is intentionally separate from the `dbowm91/i2pr` router. i2pr owns 
 **client** side: wire protocol/state, client sessions, router interoperability, language
 bindings, and eventually a standalone tunnel manager/daemon.
 
-Current status: **pre-1.0 implementation foundation**. The protocol codec, async client,
-blocking facade, datagram transport, and shared-session controls are implemented. Java
-I2P/i2pd/i2pr live-router qualification has not yet been run in this environment; see the
-milestone closure records for exact boundaries.
+Current status: **pre-1.0 implementation foundation, conditionally closed**. The protocol
+codec, async client, blocking facade, both datagram transports, concrete shared-session
+identity, the conformance runner, the interop harness, and hosted CI are implemented.
+
+The one thing that does **not** exist is live router evidence: no Java I2P, i2pd, or i2pr
+payload row has ever passed, because the implementation host has no router and restricts
+UDP egress to port 53, which prevents I2P peers from establishing tunnels. Milestones 005
+and 006 are therefore conditionally closed, and milestone 011 carries the live payload
+matrix as the gate for strict closure. See `plans/closure/sam-library/` for exact
+boundaries.
 
 ## Target shape
 
@@ -50,19 +56,47 @@ The initial reference set includes:
 - `go-i2p/go-sam-go`, `yosemite`, `go-i2p/sam3`, and `sam-forwarder` as
   API/behavior references only.
 
-The exact pinned revisions used for implementation evidence are frozen by Milestone 001.
+The exact pinned revisions used for implementation evidence are frozen by Milestone 001
+and re-verified by Milestone 005; see
+[`specs/references/sam-v3-reference-freeze.md`](specs/references/sam-v3-reference-freeze.md).
 
 ## Workspace crates
 
 - `i2pr-sam-proto` contains bounded runtime-neutral SAM syntax, typed protocol values,
   state legality, capabilities, and distinct authenticated/unverified/raw datagram types.
 - `i2pr-sam` is the canonical Tokio async client for HELLO, Destination generation,
-  naming, STREAM, forwarded UDP datagrams, and shared-owner child lifecycle.
+  naming, STREAM, both datagram transports (UDP forwarding and the v1/v2-compatible
+  control socket), and shared-owner child lifecycle with concrete Destination identity.
 - `i2pr-sam-blocking` is a synchronous facade over the async crate. Calls made from an
   existing Tokio runtime return a typed `NestedRuntime` error.
 
 The implementation is pre-1.0 and not published. Use the async or blocking crate for
-application code; see `docs/client-usage.md` for examples and lifecycle limits.
+application code; see [`docs/client-usage.md`](docs/client-usage.md) for examples and
+lifecycle limits and [`docs/api-migration.md`](docs/api-migration.md) for the API changes
+made by the two most recent milestones.
+
+## Verification
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --locked --workspace
+python3 scripts/check-proto-boundary.py --self-test
+python3 scripts/check-api-snapshot.py --self-test
+python3 scripts/check-conformance-artifact.py --self-test
+```
+
+Hosted lanes run on Linux stable, Linux MSRV 1.89, macOS, and Windows. Live router
+qualification is a separate manual workflow:
+
+```bash
+python3 scripts/interop/udp_egress_probe.py
+python3 scripts/interop/qualify.py --all
+```
+
+If the UDP probe cannot reach a non-standard port, the host cannot run an I2P router and
+the live lane will report `not_run` with a named diagnostic. That is an environment result,
+not a compatibility result.
 
 ## License
 

@@ -25,6 +25,52 @@ The revision values are Git remote HEADs observed with `git ls-remote` on the fr
 date, not claims that these projects were run locally. Live test evidence is recorded in
 milestone closures, separately from this source pin.
 
+## 2026-10-07 pin re-verification (milestone 005)
+
+The three deployed-behavior pins were re-observed with `git ls-remote` on 2026-10-07 during
+milestone 005 and are unchanged from the values above:
+
+```
+git ls-remote https://github.com/i2p/i2p.i2p.git HEAD  -> a629ec7c9c675dd252d005fb881efd92e8e6ba27
+git ls-remote https://github.com/PurpleI2P/i2pd.git HEAD -> d147bb0fd6789c75dc1c4d70c4f79b151a552d53
+git ls-remote https://github.com/dbowm91/i2pr.git HEAD  -> 4f4e98f5a0241355af5099c73065088dede1b1de
+```
+
+The values are also recorded declaratively in `scripts/interop/routers.json` so the harness
+and the documentation cannot drift apart.
+
+## Normative clarifications established by milestone 005
+
+Milestone 005 re-read the frozen documents and recorded the clauses the implementation now
+depends on. These are the exact passages the corrective work was written against.
+
+1. **Control-socket STREAM ACCEPT announces the peer separately from payload.** After
+   `STREAM STATUS RESULT=OK`, a non-silent accept is followed by `$destination`, optional
+   `FROM_PORT=`/`TO_PORT=` lines, and a blank line, and only then payload. `STREAM CONNECT`
+   has no such block. Milestone 004 started payload framing at the status line, so the peer
+   block was delivered to applications as data and `remote_destination()` could never be
+   populated.
+2. **Success replies carry the private key.** `SESSION CREATE` answers
+   `RESULT=OK EXPIRES=... DESTINATION=$privkey`. The client retains that value only in
+   memory and never renders, logs, or publishes it.
+3. **`NAMING LOOKUP NAME=ME` is the documented identity path.** The reply carries
+   `VALUE=$destination` for the calling socket's session, which is how a router-generated
+   Destination is resolved without retaining key material.
+4. **DATAGRAM/RAW protocol numbers 6, 17, 19 and 20 are reserved.** The specification marks
+   them "not allowed" for `STYLE=RAW`, and a RAW subsession may not set
+   `LISTEN_PROTOCOL=6`.
+5. **The v1/v2-compatible control-socket datagram mechanism is send-and-receive with raw
+   bytes.** `DATAGRAM SEND`/`RAW SEND` take `SIZE=$n` followed by exactly `n` raw bytes -
+   not base64 - and deliveries arrive as `DATAGRAM RECEIVED`/`RAW RECEIVED` lines followed
+   by `SIZE` raw bytes. The legacy documentation shows no `ID=` field; the current runner
+   implementations require one, and the client sends it.
+6. **Raw forwarding metadata is conditional.** The FROM_PORT/TO_PORT/PROTOCOL block appears
+   only when the session was created with `HEADER=true` (SAM 3.2+). Without it a forwarded
+   RAW datagram is bare payload, and inventing metadata for it misreports the wire.
+7. **Primary sessions carry no datagram routing options.** `PORT`, `HOST`, `FROM_PORT`,
+   `TO_PORT`, `PROTOCOL`, `LISTEN_PORT`, `LISTEN_PROTOCOL`, and `HEADER` belong to
+   subsessions.
+
 ## 2026-10 protocol update
 
 The current SAM documentation was retrieved 2026-10-07 and identifies itself as updated
