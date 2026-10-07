@@ -56,7 +56,7 @@ Commands executed on this host, with observed results:
 | Command | Result |
 |---|---|
 | `cargo test --locked -p i2pr-sam-proto` | pass |
-| `cargo test --locked -p i2pr-sam` | pass, including the new deterministic mock suite |
+| `cargo test --locked -p i2pr-sam` | pass - 37 tests, including the new deterministic mock suite |
 | `cargo clippy --workspace --all-targets -- -D warnings` | clean |
 | `cargo +1.89 test --workspace` (MSRV) | pass |
 | `python3 scripts/interop/udp_egress_probe.py` | exit 1, `i2p_router_udp_capable=false` |

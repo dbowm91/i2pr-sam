@@ -1,6 +1,10 @@
 # SAM Library Milestone 005 — Live interoperability and protocol-closure corrective
 
-Status: ready for handoff
+Status: executed; conditionally closed
+
+Closure: `plans/closure/sam-library/005-status.md`
+Implementation revision: `2439485a63319ae8501ac3ccad789f886a4465e0`
+Residual: live multi-router payload matrix, registered as milestone 011.
 
 Repository baseline: `d7ee20fff63ba4421e957455c10d94c23d4529aa`
 

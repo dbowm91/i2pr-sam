@@ -1,8 +1,13 @@
 # SAM Library Milestone 006 — Verification, CI, and public-API stabilization corrective
 
-Status: blocked on Milestone 005
+Status: executed; conditionally closed
 
-Repository baseline: `d7ee20fff63ba4421e957455c10d94c23d4529aa` planning baseline; refresh after M005 closure.
+Closure: `plans/closure/sam-library/006-status.md`
+Implementation revision: `2439485a63319ae8501ac3ccad789f886a4465e0`
+Hosted run: `37646431761`, all six lanes green.
+Residual: inherited from M005's conditional closure, registered as milestone 011.
+
+Repository baseline: `d7ee20fff63ba4421e957455c10d94c23d4529aa` planning baseline; refreshed at M005 closure.
 
 Corrects:
 

@@ -62,7 +62,7 @@ exit 3 (environment cannot run live lanes) from exit 1 (a real failing row).
 |---|---|
 | `cargo fmt --all -- --check` | pass |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | pass |
-| `cargo test --locked --workspace` | pass |
+| `cargo test --locked --workspace` | pass - 51 tests (12 protocol, 37 async, 2 blocking), 0 ignored, 0 failed |
 | `cargo +1.89 test --workspace` | pass |
 | `python3 scripts/check-proto-boundary.py` | pass, positive control detected |
 | `python3 scripts/check-proto-boundary.py --self-test` | 29/29 |
@@ -73,7 +73,8 @@ exit 3 (environment cannot run live lanes) from exit 1 (a real failing row).
 ## 4. Hosted CI evidence
 
 Run `37646431761`, workflow `ci`, triggered by pull request 1 against `main`, executed
-2026-10-07T15:44:44Z to 2026-10-07T15:46:13Z against commit `{sha}`. Overall conclusion:
+2026-10-07T15:44:44Z to 2026-10-07T15:46:13Z against commit
+`2439485a63319ae8501ac3ccad789f886a4465e0`. Overall conclusion:
 **success**. <https://github.com/dbowm91/i2pr-sam/actions/runs/37646431761>
 
 | Job | Started | Completed | Conclusion |
@@ -89,6 +90,10 @@ Run `37646431761`, workflow `ci`, triggered by pull request 1 against `main`, ex
 newer toolchain. Test logs and guard/validator self-test output were uploaded as workflow
 artifacts. The `live-interop` workflow is `workflow_dispatch` only and was not executed; it
 cannot be cited as evidence of anything.
+
+A second run, `37646808105`, re-executed all six lanes against the closure commit
+`1e5a7f1916ccf01c9a11f6f21191113ae49d6e4b` and concluded `success`, so the documented
+closure state is itself green rather than only its parent.
 
 ## 5. Acceptance criteria
 
