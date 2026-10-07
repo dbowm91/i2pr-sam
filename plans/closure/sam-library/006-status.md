@@ -2,8 +2,8 @@
 
 Status: **conditionally closed**
 
-Implementation revision: `IMPLEMENTATION_SHA`
-Closure revision: `CLOSURE_SHA`
+Implementation revision: `2439485a63319ae8501ac3ccad789f886a4465e0`
+Closure revision: this record, committed immediately after the implementation revision above
 Plan: `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md`
 Predecessor: `plans/closure/sam-library/005-status.md`
 
@@ -72,7 +72,23 @@ exit 3 (environment cannot run live lanes) from exit 1 (a real failing row).
 
 ## 4. Hosted CI evidence
 
-`HOSTED_CI_EVIDENCE`
+Run `37646431761`, workflow `ci`, triggered by pull request 1 against `main`, executed
+2026-10-07T15:44:44Z to 2026-10-07T15:46:13Z against commit `{sha}`. Overall conclusion:
+**success**. <https://github.com/dbowm91/i2pr-sam/actions/runs/37646431761>
+
+| Job | Started | Completed | Conclusion |
+|---|---|---|---|
+| `fmt` | 15:44:49Z | 15:45:08Z | success |
+| `clippy` | 15:44:49Z | 15:45:21Z | success |
+| `test-linux` | 15:44:49Z | 15:45:12Z | success |
+| `msrv` | 15:44:48Z | 15:45:23Z | success |
+| `test-macos` | 15:44:53Z | 15:45:40Z | success |
+| `test-windows` | 15:44:48Z | 15:46:12Z | success |
+
+`msrv` asserted `rustc 1.89.0` before building, so the MSRV lane cannot silently pass on a
+newer toolchain. Test logs and guard/validator self-test output were uploaded as workflow
+artifacts. The `live-interop` workflow is `workflow_dispatch` only and was not executed; it
+cannot be cited as evidence of anything.
 
 ## 5. Acceptance criteria
 

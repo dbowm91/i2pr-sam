@@ -2,8 +2,8 @@
 
 Status: **conditionally closed**
 
-Implementation revision: `IMPLEMENTATION_SHA`
-Closure revision: `CLOSURE_SHA`
+Implementation revision: `2439485a63319ae8501ac3ccad789f886a4465e0`
+Closure revision: this record, committed immediately after the implementation revision above
 Plan: `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md`
 Predecessor: `plans/closure/sam-library/004-status.md`
 
