@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: active.
+Status: active — M005 foundation interoperability corrective ready; M006 verification/API corrective blocked on M005.
 
 Long-term references:
 
@@ -78,22 +78,29 @@ Initial foundation milestones do not:
 
 ## 4. Current state
 
-The repository is new and contains no implementation.
+M001 is strictly closed. M002–M004 landed substantial implementation at
+`956238fcced742836833befaf6e748e97f435001` and are conditionally closed.
 
-Current protocol reality relevant to the first line:
+Implemented today:
 
-- official SAM documentation describes current v3 syntax, PRIMARY sessions,
-  DATAGRAM2, and DATAGRAM3;
-- deployed routers do not expose those capabilities uniformly;
-- i2pd's 2026 SAM 3.3 compatibility work retained `MASTER` and explicitly did not add
-  `PRIMARY`, while other 3.3 pieces were reported working;
-- the official specification itself notes i2pd/I2P+ naming differences;
-- i2pr has its own SAM-server extension work, but this repository treats i2pr as one
-  interoperability target rather than a privileged wire dialect;
-- i2pr has already defined the service-tunnel adapter handoff this repository will
-  eventually consume.
+- runtime-neutral bounded protocol/state crate;
+- Tokio async HELLO, Destination generation, naming, ordinary STREAM;
+- UDP-forwarded DATAGRAM/RAW/DATAGRAM2/DATAGRAM3 surfaces;
+- explicit MASTER/PRIMARY shared owner plus child add/remove;
+- blocking facade;
+- bounded initial bridge-connect retry;
+- mock/fault/lifecycle tests;
+- conformance executable and public-API snapshot.
 
-Milestone 001 must pin exact current spec/router/library reference revisions before code.
+The conditional closures are material, not administrative. No Java I2P, i2pd, or i2pr
+live payload row has passed yet; every attempted bridge connection was refused because no
+router was present in the implementation environment. The shared-session mock compares
+the stored request token `TRANSIENT`, not a concrete router-generated Destination.
+Ordinary v1/v2-compatible DATAGRAM/RAW control-socket modes planned by M003 are absent.
+Blocking parity is incomplete, resource qualification is narrow, and no hosted CI exists.
+
+Therefore M005/M006 are corrective prerequisites before bindings or the portable
+service-tunnel adapter can become implementation-ready.
 
 ## 5. Target architecture
 
@@ -132,19 +139,29 @@ The exact later crate split is not frozen until those milestones are planned.
   v
 004 blocking facade + resilience + conformance/public API stabilization
   |
-  +--> 005 foreign-language bindings            [future]
+  v
+005 live interoperability + protocol-closure corrective
   |
-  +--> 006 service-tunnel adapter               [future; i2pr contract]
+  v
+006 verification/CI/public-API stabilization corrective
+  |
+  +--> 007 foreign-language bindings            [future]
+  |
+  +--> 008 service-tunnel adapter               [future; i2pr contract]
           |
           v
-        007 daemon/config/management             [future]
+        009 daemon/config/management             [future]
           |
           v
-        008 CLI/WebUI/sidecar packaging          [future]
+        010 CLI/WebUI/sidecar packaging          [future]
 ```
 
-001→004 are hard dependencies. The i2pr portable-core API is an interface dependency for
-006, not for the base SAM client.
+M005 corrects the conditional wire/interoperability authority left by M002–M004. M006 is a
+hard dependency on M005 because API stabilization must follow live wire truth.
+
+The i2pr portable-core API is an interface dependency for future M008, not for the base
+SAM client. The canonical long-term phase ordering is unchanged; only subsystem-local
+milestone numbers for future work move because two corrective gates were inserted.
 
 ## 7. Milestones
 
@@ -197,20 +214,48 @@ Dependency: 003.
 Exit: foundation API is stable enough to design language bindings and the service-tunnel
 adapter without exposing protocol strings or runtime internals.
 
-### 005 — C ABI and Python bindings
+### 005 — Live interoperability and protocol-closure corrective
 
-Future, unplanned implementation handoff.
+Class: capability + invariant + corrective qualification.
 
-### 006 — i2pr service-tunnel adapter
+Objective: close the live Java/i2pd/i2pr protocol evidence, concrete shared-Destination
+identity proof, missing ordinary control-socket D1/RAW modes, and conformance-runner
+truthfulness gaps carried by M002–M004.
 
-Future, unplanned implementation handoff. Consumes the public i2pr policy/filter core;
+Dependency: 004 conditional implementation.
+
+Exit: live payload matrix and concrete same-Destination evidence satisfy the corrective
+acceptance criteria in
+`plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md`.
+
+### 006 — Verification, CI, and public-API stabilization corrective
+
+Class: invariant + infrastructure + polish.
+
+Objective: close blocking parity, cancellation/contention, retry semantics, resource
+soak, semantic API, guard-mutation, and hosted-CI gaps before downstream API consumers
+freeze the Rust surface.
+
+Dependency: 005.
+
+Exit: M002–M004 conditional foundation authority is reconciled additively to a strict
+post-corrective foundation closure.
+
+### 007 — C ABI and Python bindings
+
+Future, unplanned implementation handoff. Blocked on M006.
+
+### 008 — i2pr service-tunnel adapter
+
+Future, unplanned implementation handoff. Blocked on M006 plus a stable merged
+`i2pr-service-tunnels` integration revision; consumes the public policy/filter core and
 does not copy it.
 
-### 007 — Tunnel daemon and management API
+### 009 — Tunnel daemon and management API
 
 Future, unplanned implementation handoff.
 
-### 008 — CLI/WebUI/sidecar packaging
+### 010 — CLI/WebUI/sidecar packaging
 
 Future, unplanned implementation handoff.
 
@@ -271,21 +316,28 @@ wire dialect, result, and known deviation.
 
 ## 11. Completion definition
 
-This roadmap reaches foundation closure when 001–004 have closure records and the Rust
-API has live multi-router evidence for STREAM, datagrams, and shared sessions with bounded
-failure/recovery semantics.
+The initial implementation line 001–004 produced one strict closure and three conditional
+closures. Foundation closure now additionally requires M005 and M006.
 
-Bindings, tunnel manager, and UI are not required for foundation closure.
+Strict foundation closure requires live multi-router payload evidence, concrete
+shared-Destination identity, truthful datagram mode coverage, blocking parity,
+cancellation/contention/resource evidence, semantic API review, guard self-tests, and
+hosted cross-platform/MSRV CI.
+
+Bindings, service-tunnel adapter, tunnel manager, and UI are not required for foundation
+closure and must not begin implementation before M006 closes.
 
 ## 12. Milestone status
 
 | Milestone | Status | Implementation plan | Closure | Blocker |
 |---|---|---|---|---|
 | 001 | closed | `plans/implementation/sam-library/001-clean-room-protocol-capability-foundation.md` | `plans/closure/sam-library/001-status.md` | — |
-| 002 | conditionally closed | `plans/implementation/sam-library/002-async-client-stream-foundation.md` | `plans/closure/sam-library/002-status.md` | Java I2P + second-router live STREAM qualification |
-| 003 | conditionally closed | `plans/implementation/sam-library/003-datagram-shared-session-interoperability.md` | `plans/closure/sam-library/003-status.md` | Java/i2pd/i2pr matrix; control-socket datagram modes |
-| 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | `plans/closure/sam-library/004-status.md` | Live matrix; broader recovery qualification |
-| 005 | proposed | — | — | M005 plan may now be authored against the captured API baseline |
-| 006 | proposed | — | — | M004 + stable i2pr portable-core contract (i2pr Plan 379 ongoing) |
+| 002 | conditionally closed | `plans/implementation/sam-library/002-async-client-stream-foundation.md` | `plans/closure/sam-library/002-status.md` | corrected by 005/006 |
+| 003 | conditionally closed | `plans/implementation/sam-library/003-datagram-shared-session-interoperability.md` | `plans/closure/sam-library/003-status.md` | corrected by 005/006 |
+| 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | `plans/closure/sam-library/004-status.md` | corrected by 005/006 |
+| 005 | ready | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | — | — |
+| 006 | blocked | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | — | 005 closure |
 | 007 | proposed | — | — | 006 |
-| 008 | proposed | — | — | 007 |
+| 008 | proposed | — | — | 006 + stable merged i2pr portable-core revision |
+| 009 | proposed | — | — | 008 |
+| 010 | proposed | — | — | 009 |

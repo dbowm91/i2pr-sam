@@ -27,13 +27,13 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | conditionally closed | `plans/subsystems/sam-library-roadmap.md` | M001 closed; M002–M004 conditionally closed | Live Java I2P/i2pd/i2pr qualification remains open; see closure records. |
+| SAM library foundation | active corrective line | `plans/subsystems/sam-library-roadmap.md` | M005 ready; M006 blocked on M005 | M001 closed; M002–M004 remain conditionally closed. M005 closes live protocol/interoperability truth; M006 closes verification/CI/API-quality debt before downstream bindings/adapter work. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | State | Handoff | Dependencies |
 |---|---:|---|---|---|
-| — | — | — | — | No active implementation handoff. |
+| SAM library | 005 | **ready** | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | none beyond existing M001–M004 implementation baseline |
 
 ## Closed implementation plans
 
@@ -46,20 +46,30 @@ Canonical direction:
 
 Closure evidence is under `plans/closure/sam-library/`.
 
+## Blocked registered corrective plans
+
+| Subsystem | Milestone | State | Handoff | Blocker |
+|---|---:|---|---|---|
+| SAM library | 006 | blocked | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | M005 closure |
+
 ## Future roadmap-only work
 
-- M005 C ABI + Python bindings — API baseline is captured, so creating a bounded M005 plan
-  is unblocked. No implementation handoff is registered yet; repository license selection
-  is still required before package publication.
-- M006 i2pr service-tunnel adapter — plan only after M004 and a current stable
-  `i2pr-service-tunnels` integration revision; remains blocked because i2pr Plan 379 is
-  reconciling the current license/package/consumer handoff.
-- M007 tunnel daemon/config/persistence/management API — depends on M006.
-- M008 CLI/WebUI/sidecar packaging — depends on M007.
+The canonical phase ordering is unchanged, but subsystem-local future milestone numbers
+shifted to make room for the two corrective gates discovered by M002–M004 closure review.
+
+- M007 C ABI + Python bindings — blocked on strict M006 foundation closure. Repository
+  license selection is still required before public package distribution.
+- M008 i2pr service-tunnel adapter — blocked on M006 plus a stable merged
+  `i2pr-service-tunnels` integration revision. i2pr Plan 379 has closed on its work
+  branch with the current public consumer contract, but this repository must consume a
+  stable selected revision at implementation time.
+- M009 tunnel daemon/config/persistence/management API — depends on M008.
+- M010 CLI/WebUI/sidecar packaging — depends on M009.
 
 ## Active sequence
 
-`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed)`
+`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(ready corrective) -> 006(blocked corrective)`
 
-Protocol and client capabilities are implemented. Live-router capability claims remain
-unqualified and are not inferred from registration or negotiated version alone.
+Bindings and the service-tunnel adapter are not implementation-ready until M006 closes.
+Protocol/version capability claims continue to require live evidence rather than inference
+from registration or negotiated version alone.
