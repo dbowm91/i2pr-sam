@@ -43,6 +43,16 @@ class QualificationHarnessTests(unittest.TestCase):
         )
         self.assertEqual(argv[argv.index("--control-timeout") + 1], "120")
 
+    def test_runner_command_forwards_datagram_endpoint(self) -> None:
+        base = qualify.runner_command(router(), "127.0.0.1:7656", "stream", Path("out.json"))
+        self.assertNotIn("--datagram-endpoint", base)
+        argv = qualify.runner_command(
+            router(), "127.0.0.1:7656", "stream", Path("out.json"),
+            datagram_endpoint="127.0.0.1:17655",
+        )
+        self.assertEqual(argv.count("--datagram-endpoint"), 1)
+        self.assertEqual(argv[argv.index("--datagram-endpoint") + 1], "127.0.0.1:17655")
+
     def test_peer_endpoint_reaches_run_runner_from_qualify_one(self) -> None:
         artifact = {"schema_version": "1.1", "rows": [{"feature": "stream", "result": "not_run"}], "summary": {}}
         with tempfile.TemporaryDirectory() as artifact_dir:
@@ -58,8 +68,9 @@ class QualificationHarnessTests(unittest.TestCase):
             try:
                 with patch.object(qualify, "run_runner", return_value=(0, __import__("json").dumps(artifact), "", None)) as run:
                     outcome = qualify.qualify_one(router(), args)
-                self.assertEqual(run.call_args.args[-3], "127.0.0.1:7657")
-                self.assertEqual(run.call_args.args[-1], 120)
+                self.assertEqual(run.call_args.args[-4], "127.0.0.1:7657")
+                self.assertEqual(run.call_args.args[-2], 120)
+                self.assertEqual(run.call_args.args[-1], None)
                 self.assertTrue(outcome.artifact_valid)
             finally:
                 for probe in reversed(probes):

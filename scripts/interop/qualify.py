@@ -291,6 +291,7 @@ def runner_command(
     peer_endpoint: str | None = None,
     service_destination: str | None = None,
     control_timeout: int = 120,
+    datagram_endpoint: str | None = None,
 ) -> list[str]:
     argv = [
         "cargo",
@@ -321,6 +322,8 @@ def runner_command(
         argv.extend(["--peer-endpoint", peer_endpoint])
     if service_destination:
         argv.extend(["--service-destination", service_destination])
+    if datagram_endpoint:
+        argv.extend(["--datagram-endpoint", datagram_endpoint])
     return argv
 
 
@@ -333,11 +336,13 @@ def run_runner(
     peer_endpoint: str | None = None,
     service_destination: str | None = None,
     control_timeout: int = 120,
+    datagram_endpoint: str | None = None,
 ) -> tuple[int | None, str, str, dict[str, str] | None]:
 
     """Return (exit_code, stdout, stderr, diagnostic); diagnostic is set when the run failed."""
     argv = runner_command(
-        router, endpoint, plan, output, peer_endpoint, service_destination, control_timeout
+        router, endpoint, plan, output, peer_endpoint, service_destination, control_timeout,
+        datagram_endpoint,
     )
     if shutil.which("cargo") is None:
         return None, "", "", _diag(DIAG_RUNNER_MISSING, "cargo not found on PATH; cannot build sam-conformance", blocking=True)
@@ -616,6 +621,7 @@ def qualify_one(router: Router, args: argparse.Namespace) -> Outcome:
             router, endpoint, args.plan, artifact_path, args.timeout, args.peer_endpoint,
             getattr(args, "service_destination", None),
             getattr(args, "control_timeout", 120),
+            getattr(args, "datagram_endpoint", None),
         )
         stdout_log.write_text(stdout, encoding="utf-8")
         stderr_log.write_text(runner_stderr, encoding="utf-8")
@@ -684,6 +690,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=120,
         help="per-SAM-command timeout in seconds (default: 120; SESSION CREATE may need a minute or longer)",
+    )
+    parser.add_argument(
+        "--datagram-endpoint",
+        default=None,
+        help="override the SAM UDP forwarding endpoint (HOST:PORT); default is the bridge address with TCP port minus one",
     )
     return parser
 

@@ -227,3 +227,43 @@ dialect incompatibility.
 The artifact validator accepted the new result. M011 remains open: a payload exchange
 through the same router, or the known-service HTTP STREAM operation, must pass before its
 live evidence gate can close.
+
+## 2026-10-08 — full matrix pass on Java I2P; M011 closed
+
+The blocking defect was in the client's peer-block reader, found by comparing a raw
+Python probe against the runner: after Java's single-line peer block
+(`$destination FROM_PORT=0 TO_PORT=0`, ~546 bytes, no blank line, no EOF), the first
+binary payload line (starting `0xED 0x0C…`, not valid UTF-8) was decoded with
+`unwrap_or_default()`, read as an empty terminator, and its bytes were swallowed —
+so `read_exact(512)` stalled forever waiting for bytes already consumed. Mock payloads
+were ASCII and never covered this. The loop now works on bytes
+(`strip_line_ending`), pushes back non-UTF-8 lines, and accepts inline
+`FROM_PORT=`/`TO_PORT=` on the destination line. v1 sends were also made
+fire-and-forget (neither router replies to `DATAGRAM SEND`/`RAW SEND`), and
+UDP-forward sessions retain their control socket until `close()`.
+
+Final qualification (same-router peer, zero-hop tunnels, settle 30 s, 2 attempts,
+control timeout 120 s) against Java I2P package `2.13.1-1~ubuntu4` (runtime
+`2.13.0-0-1~ubuntu4`), SAM TCP `127.0.0.1:7656`, negotiated SAM 3.3:
+
+- `stream_http_service_request_response` **pass** — HTTP `200 OK`, 1,186 response
+  bytes through the router's own eepsite tunnel.
+- `stream_payload_bidirectional` **pass** — 512 bytes each way, same-router peer.
+- D1/RAW over UDP-forward and control-socket, D2, D3: **pass** with correct trust
+  typing (D3 source unverified hash, RAW sourceless).
+- PRIMARY and MASTER shared STREAM/DATAGRAM children: **pass** — one owner
+  Destination each, child removal, owner-teardown invalidation.
+
+Summary: `pass=11, fail=0, not_run=0, unsupported=0`; all ten capabilities
+`supported`. Evidence:
+[`artifacts/interop/m011-2026-10-08/java-i2p-conformance.json`](../artifacts/interop/m011-2026-10-08/java-i2p-conformance.json)
+and the regenerated `java-i2p-matrix.csv` in the same directory. Older files in
+that directory (`interop-matrix.csv`, the first `java-i2p-*` run, the i2pd
+attempts) are superseded history.
+
+The i2pd leg was not completed and is not required by the amended single-router
+basis: the pinned build was lost in a host reboot that wiped `/tmp`, and system
+i2pd 2.49.0 dies within minutes under session load (`Tunnels`-thread general
+protection fault; `SESSION CREATE` succeeds, then the process vanishes
+mid-exchange). See `plans/closure/sam-library/011-status.md`. M011 is closed;
+its matrix satisfies the M005/M006 residual live-payload condition.

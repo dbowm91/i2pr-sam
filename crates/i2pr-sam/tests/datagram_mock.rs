@@ -4,9 +4,11 @@
 //!
 //! * **E** — ordinary DATAGRAM1 without a forwarding `PORT` receives through the
 //!   v1/v2-compatible control socket: `DATAGRAM SEND ID=.. DESTINATION=.. [FROM_PORT=]
-//!   [TO_PORT=] SIZE=<n>\n` followed by exactly `n` **raw** bytes (never base64), answered by
-//!   `DATAGRAM STATUS RESULT=OK MESSAGE=<n>`. Inbound is an unsolicited
-//!   `DATAGRAM RECEIVED DESTINATION=<d> SIZE=<n> [FROM_PORT=] [TO_PORT=]\n` plus `n` raw bytes.
+//!   [TO_PORT=] SIZE=<n>\n` followed by exactly `n` **raw** bytes (never base64). The
+//!   bridge answers nothing for a v1 send, so the send completes once the bytes reach
+//!   the socket; delivery is proven by receipt, never by a reply line. Inbound is an
+//!   unsolicited `DATAGRAM RECEIVED DESTINATION=<d> SIZE=<n> [FROM_PORT=] [TO_PORT=]\n`
+//!   plus `n` raw bytes.
 //! * **F** — the RAW form of the same transport, with `PROTOCOL=` preserved and no source.
 //! * **G** — that transport is only legal for STYLE=DATAGRAM and STYLE=RAW. DATAGRAM2,
 //!   DATAGRAM3 and every shared subsession must be refused before any command is written.
@@ -14,6 +16,10 @@
 //!   flood drops whole deliveries and never interleaves or corrupts one.
 //! * **K** — a forwarded RAW datagram carries a FROM_PORT/TO_PORT/PROTOCOL block only when
 //!   the session was created with `HEADER=true`.
+//! * **L** — a UDP-forwarded session keeps its control socket open for its whole lifetime:
+//!   SAM sessions live and die with that socket, so dropping it at creation time kills the
+//!   router-side session and every later send fails with session-not-found. `close()` must
+//!   release it.
 
 mod support;
 
@@ -49,9 +55,11 @@ async fn e_control_socket_datagram1_sends_raw_bytes_and_receives_an_announced_so
                 Match::exact("NAMING LOOKUP NAME=ME"),
                 &naming_me_ok(OWNER_DESTINATION),
             ),
+            // No reply rule: the bridge answers nothing for a v1 send. If the client
+            // waited for a reply line here, this test would time out.
             Rule::line(
                 Match::exact(DATAGRAM_SEND_LINE.trim_end_matches('\n')),
-                "DATAGRAM STATUS RESULT=OK MESSAGE=7\n",
+                "",
             ),
             Rule::raw(DATAGRAM_PAYLOAD.len(), DATAGRAM_PAYLOAD),
             Rule::push(inbound),
@@ -82,17 +90,6 @@ async fn e_control_socket_datagram1_sends_raw_bytes_and_receives_an_announced_so
         .await
         .unwrap();
 
-    // Exact bytes: the header line then seven raw payload bytes, with no base64 framing.
-    bridge.connection(1).assert_wrote(
-        b"DATAGRAM SEND ID=dg DESTINATION=peer.b32.i2p FROM_PORT=1 TO_PORT=2 SIZE=7\npayload",
-    );
-    bridge.connection(1).assert_lacks(b"payload\n");
-    assert_eq!(
-        bridge.connection(1).occurrences(b"DATAGRAM SEND ID=dg"),
-        1,
-        "one send must produce exactly one header line"
-    );
-
     match session.recv().await.unwrap() {
         i2pr_sam_proto::ReceivedDatagram::Authenticated(message) => {
             assert_eq!(
@@ -106,6 +103,18 @@ async fn e_control_socket_datagram1_sends_raw_bytes_and_receives_an_announced_so
         }
         other => panic!("DATAGRAM1 must decode as authenticated, not {other:?}"),
     }
+    // Exact bytes: the header line then seven raw payload bytes, with no base64 framing.
+    // These assertions run after recv() so the mock is guaranteed to have consumed the
+    // send: a v1 send carries no reply to synchronize on.
+    bridge.connection(1).assert_wrote(
+        b"DATAGRAM SEND ID=dg DESTINATION=peer.b32.i2p FROM_PORT=1 TO_PORT=2 SIZE=7\npayload",
+    );
+    bridge.connection(1).assert_lacks(b"payload\n");
+    assert_eq!(
+        bridge.connection(1).occurrences(b"DATAGRAM SEND ID=dg"),
+        1,
+        "one send must produce exactly one header line"
+    );
     bridge.assert_scripts_clean();
     session.close().await;
 }
@@ -129,9 +138,11 @@ async fn f_control_socket_raw_preserves_protocol_and_carries_no_source_identity(
                 Match::exact("NAMING LOOKUP NAME=ME"),
                 &naming_me_ok(OWNER_DESTINATION),
             ),
+            // No reply rule: the bridge answers nothing for a v1 send. If the client
+            // waited for a reply line here, the send below would time out.
             Rule::line(
                 Match::exact("RAW SEND ID=rw DESTINATION=peer.b32.i2p PROTOCOL=16 SIZE=5"),
-                "RAW STATUS RESULT=OK MESSAGE=5\n",
+                "",
             ),
             Rule::raw(5, b"bytes"),
             Rule::push(inbound),
@@ -156,9 +167,6 @@ async fn f_control_socket_raw_preserves_protocol_and_carries_no_source_identity(
         .send("peer.b32.i2p", b"bytes", None, None)
         .await
         .unwrap();
-    bridge
-        .connection(1)
-        .assert_wrote(b"RAW SEND ID=rw DESTINATION=peer.b32.i2p PROTOCOL=16 SIZE=5\nbytes");
 
     match session.recv().await.unwrap() {
         i2pr_sam_proto::ReceivedDatagram::Raw(message) => {
@@ -173,6 +181,11 @@ async fn f_control_socket_raw_preserves_protocol_and_carries_no_source_identity(
         }
         other => panic!("RAW carries no source identity, so it must decode as Raw, not {other:?}"),
     }
+    // Wire assertions run after recv() so the mock is guaranteed to have consumed the
+    // send: a v1 send carries no reply to synchronize on.
+    bridge
+        .connection(1)
+        .assert_wrote(b"RAW SEND ID=rw DESTINATION=peer.b32.i2p PROTOCOL=16 SIZE=5\nbytes");
     bridge.assert_scripts_clean();
     session.close().await;
 }
@@ -390,9 +403,7 @@ async fn k_forwarded_raw_with_header_true_preserves_ports_and_protocol() {
         }
         other => panic!("forwarded RAW must decode as Raw, not {other:?}"),
     }
-    bridge
-        .connection(1)
-        .assert_wrote(b"HOST=127.0.0.1 HEADER=true PROTOCOL=16\n");
+    bridge.connection(1).assert_wrote(b"sam.udp.port=7655 HEADER=true PROTOCOL=16\n");
     bridge.assert_scripts_clean();
     session.close().await;
 }
@@ -501,4 +512,59 @@ async fn forwarded_raw_bridge(id: &str) -> support::MockBridge {
         ],
     ])
     .await
+}
+
+/// L: a UDP-forwarded session must not close its control socket at creation time.
+#[tokio::test]
+async fn l_forwarded_datagram_session_keeps_its_control_socket_open_until_close() {
+    let bridge = support::MockBridge::start_with(vec![
+        vec![Rule::line(Match::starts_with("HELLO VERSION"), HELLO_REPLY)],
+        vec![
+            Rule::line(Match::starts_with("HELLO VERSION"), HELLO_REPLY),
+            Rule::line(
+                Match::starts_with("SESSION CREATE STYLE=DATAGRAM ID=keep"),
+                SESSION_OK,
+            ),
+            Rule::line(
+                Match::exact("NAMING LOOKUP NAME=ME"),
+                &naming_me_ok(OWNER_DESTINATION),
+            ),
+        ],
+    ])
+    .await;
+    let client = i2pr_sam::SamClient::connect(bridge.client_config())
+        .await
+        .unwrap();
+    let session = client
+        .create_datagram_session_with(
+            &i2pr_sam::SessionDestination::Transient,
+            "keep",
+            i2pr_sam_proto::SessionStyle::Datagram,
+            i2pr_sam::DatagramTransport::UdpForward,
+            &[],
+        )
+        .await
+        .unwrap();
+    bridge.connection(1).assert_wrote(b"HOST=127.0.0.1 sam.udp.host=127.0.0.1 sam.udp.port=7655\n");
+    // Give a dropped socket time to deliver its FIN: without the retained control
+    // socket the bridge observes the close within milliseconds.
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    assert_eq!(
+        bridge.live_connections(),
+        2,
+        "the utility and session control sockets must both stay open; \
+         closing the session socket kills the router-side session"
+    );
+
+    session.close().await;
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while bridge.live_connections() != 1 && std::time::Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    assert_eq!(
+        bridge.live_connections(),
+        1,
+        "close() must release the session control socket"
+    );
+    bridge.assert_scripts_clean();
 }

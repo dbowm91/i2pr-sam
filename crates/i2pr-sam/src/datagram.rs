@@ -259,8 +259,11 @@ pub fn decode_forwarded_datagram(
     }
     let payload = bytes[split + 1..].to_vec();
     if style == SessionStyle::Datagram3 {
+        // Routers emit the 32-byte source hash in the I2P Base64 alphabet (`-`/`~`),
+        // so normalize to standard Base64 before decoding, exactly as for Destinations.
+        let standard_base64 = source.replace('-', "+").replace('~', "/");
         let hash: [u8; 32] = BASE64
-            .decode(source)
+            .decode(standard_base64)
             .map_err(|_| SamError::Rejected("invalid DATAGRAM3 source hash".into()))?
             .try_into()
             .map_err(|_| SamError::Rejected("invalid DATAGRAM3 source hash length".into()))?;
@@ -415,5 +418,31 @@ mod tests {
         }
         assert!(build_forwarded_frame("3.0", "bad id", "peer", b"x", None, None, None).is_err());
         assert!(build_forwarded_frame("3.0", "ok", "pe er", b"x", None, None, None).is_err());
+    }
+
+    #[test]
+    fn forwarded_datagram3_accepts_the_i2p_base64_source_hash() {
+        // i2pd emits the 32-byte D3 source hash in the I2P alphabet (`-`/`~`); a
+        // 32-byte all-0xfb input encodes with `+`/`/` in standard Base64.
+        let standard = BASE64.encode([0xfbu8; 32]);
+        assert!(standard.contains('+') || standard.contains('/'));
+        let i2p = standard.replace('+', "-").replace('/', "~");
+        let wire = format!("{i2p}\nunsafe-payload").into_bytes();
+        let decoded = decode_forwarded_datagram(
+            SessionStyle::Datagram3,
+            ForwardedMetadata {
+                header: false,
+                protocol: I2pProtocol::new(18).expect("valid protocol"),
+            },
+            &wire,
+        )
+        .expect("an I2P-alphabet D3 hash must decode");
+        match decoded {
+            ReceivedDatagram::Unverified(message) => {
+                assert_eq!(message.payload, b"unsafe-payload");
+                assert_eq!(message.source_hash.as_bytes(), &[0xfbu8; 32]);
+            }
+            other => panic!("DATAGRAM3 must decode as unverified, not {other:?}"),
+        }
     }
 }

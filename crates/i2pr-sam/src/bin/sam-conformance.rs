@@ -71,6 +71,14 @@ struct Options {
     output: Option<PathBuf>,
     control_timeout: Duration,
     max_payload: usize,
+    /// SAM UDP forwarding endpoint datagram frames are sent to. Defaults to the bridge
+    /// address with TCP port minus one (Java `7656 -> 7655`; i2pd behaves the same), which
+    /// matches both routers' default layout; override when the router uses another port.
+    datagram_endpoint: Option<SocketAddr>,
+    /// Unique suffix for every SAM session/child ID created by this invocation, so a
+    /// lingering session from an earlier timed-out run can never collide with this run's
+    /// IDs and surface as a misleading `INVALID_ID` verdict.
+    tag: String,
 }
 
 fn parse_options() -> Result<Options, String> {
@@ -86,6 +94,7 @@ fn parse_options() -> Result<Options, String> {
     let mut output = None;
     let mut control_timeout = 120;
     let mut max_payload = 512usize;
+    let mut datagram_endpoint = None;
     let mut index = 0;
     while index < args.len() {
         let flag = args[index].as_str();
@@ -127,6 +136,13 @@ fn parse_options() -> Result<Options, String> {
                     .parse()
                     .map_err(|e| format!("--max-payload: {e}"))?
             }
+            "--datagram-endpoint" => {
+                datagram_endpoint = Some(
+                    value()?
+                        .parse::<SocketAddr>()
+                        .map_err(|e| format!("--datagram-endpoint: {e}"))?,
+                )
+            }
             other => return Err(format!("unrecognised argument {other}")),
         }
         index += 1;
@@ -140,6 +156,13 @@ fn parse_options() -> Result<Options, String> {
     if control_timeout == 0 {
         return Err("--control-timeout must be positive".into());
     }
+    let tag = {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or_default();
+        format!("{:x}{:x}", std::process::id(), nanos & 0xffffff)
+    };
     Ok(Options {
         endpoint,
         router,
@@ -152,7 +175,93 @@ fn parse_options() -> Result<Options, String> {
         output,
         control_timeout: Duration::from_secs(control_timeout),
         max_payload,
+        datagram_endpoint,
+        tag,
     })
+}
+
+/// Millisecond timestamp for live progress tracing on stderr (never into artifacts).
+fn live_ts() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or_default()
+}
+
+/// Session/child ID scoped to this invocation; see `Options::tag`.
+fn sid(options: &Options, base: &str) -> String {
+    format!("{base}-{}", options.tag)
+}
+
+/// Connect for a payload exchange, tolerating the accept/connect race.
+///
+/// Java I2P answers `CANT_REACH_PEER` when the SYN arrives before the peer's ACCEPT is
+/// registered. The accept task is always started first, but on a fast (or same-router)
+/// path the connect can still win the race, so a `CANT_REACH_PEER` or connect timeout is
+/// retried a few times before it becomes the row verdict. Anything else returns
+/// immediately: a genuine rejection must stay visible, not be retried into noise.
+async fn connect_for_exchange(
+    peer_session: &i2pr_sam::StreamSession,
+    destination: &str,
+    attempts: u32,
+) -> Result<i2pr_sam::SamStream, SamError> {
+    let mut last = None;
+    for attempt in 1..=attempts {
+        match peer_session.connect(destination, None, None).await {
+            Ok(stream) => return Ok(stream),
+            Err(error) => {
+                let retryable = matches!(&error, SamError::Timeout)
+                    || matches!(&error, SamError::Rejected(message) if message.contains("CANT_REACH_PEER"));
+                if retryable && attempt < attempts {
+                    eprintln!("live retry: connect attempt {attempt} not yet accepted ({error}), retrying");
+                    tokio::time::sleep(Duration::from_secs(3)).await;
+                    last = Some(error);
+                    continue;
+                }
+                return Err(error);
+            }
+        }
+    }
+    Err(last.expect("connect retry loop always attempts once"))
+}
+
+/// Session tunnel shaping for the same-router lab matrix.
+///
+/// The lab host's multi-hop data plane cannot carry fresh-transient payload inside the
+/// router's stream lifetime, while the SAM wire framing itself is correct (proven by the
+/// default-tunnel service row and by datagram payload passes). Exporting
+/// `SAM_CONFORMANCE_TUNNEL_LENGTH=0` makes the transient matrix sessions request
+/// zero-length inbound/outbound tunnels: addressing, LeaseSet publication, session
+/// management, framing, and payload agreement are all still exercised live through the
+/// router; only multi-hop onion routing is bypassed. When the variable is unset, no
+/// tunnel options are sent and both routers use their defaults. Mock tests run with the
+/// variable unset, so unit expectations keep the bare `SESSION CREATE` shape.
+fn live_tunnel_options() -> Vec<(String, String)> {
+    let Some(length) = std::env::var("SAM_CONFORMANCE_TUNNEL_LENGTH")
+        .ok()
+        .and_then(|value| value.parse::<u32>().ok())
+    else {
+        return Vec::new();
+    };
+    vec![
+        ("inbound.length".to_owned(), length.to_string()),
+        ("outbound.length".to_owned(), length.to_string()),
+    ]
+}
+
+/// Verbose step tracing for live runs: `SAM_CONFORMANCE_TRACE=1` prints per-step
+/// diagnostics to stderr. Retry/settle/warning lines always print; anything gated
+/// here is timing detail only a debugging run needs.
+fn trace_enabled() -> bool {
+    std::env::var("SAM_CONFORMANCE_TRACE")
+        .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
+fn trace_step(message: String) {
+    if trace_enabled() {
+        eprintln!("{message}");
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -254,8 +363,9 @@ impl Row {
     }
 
     /// Record an operation that did not complete, keeping capability verdicts distinct.
-    fn failed(mut self, error: &SamError, note: &str) -> Self {
+    fn failed(mut self, error: &SamError, note: impl AsRef<str>) -> Self {
         self.diagnostic_category = Some(classify_diagnostic(error).to_owned());
+        let note = note.as_ref();
         self.notes = if note.is_empty() {
             error.to_string()
         } else {
@@ -353,10 +463,43 @@ fn payload(seed: u8, size: usize) -> Vec<u8> {
         .collect()
 }
 
-fn config_for(endpoint: SocketAddr, control_timeout: Duration) -> ClientConfig {
+/// Fresh transient Destinations need inbound tunnels plus LeaseSet floodfill before the
+/// peer session can reach them; SESSION CREATE OK does not imply reachability. Wait once
+/// per exchange so a live router can publish before payload is attempted. Set
+/// `SAM_CONFORMANCE_SETTLE_SECS=0` to skip (mock/fast environments).
+async fn settle_for_live_leasesets() {
+    let settle = std::env::var("SAM_CONFORMANCE_SETTLE_SECS")
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .unwrap_or(90);
+    if settle > 0 {
+        eprintln!("live settle: waiting {settle}s for transient LeaseSet publication");
+        tokio::time::sleep(Duration::from_secs(settle)).await;
+    }
+}
+
+/// Warmup exchange attempts per row; fresh client tunnels may need traffic before payload
+/// flows. Set `SAM_CONFORMANCE_ATTEMPTS=1` for a single attempt.
+fn live_attempts() -> u32 {
+    std::env::var("SAM_CONFORMANCE_ATTEMPTS")
+        .ok()
+        .and_then(|value| value.parse::<u32>().ok())
+        .filter(|attempts| (1..=5).contains(attempts))
+        .unwrap_or(3)
+}
+
+fn config_for(
+    endpoint: SocketAddr,
+    control_timeout: Duration,
+    datagram_endpoint: Option<SocketAddr>,
+) -> ClientConfig {
     let mut config = ClientConfig::new(endpoint);
     config.control_timeout = control_timeout;
     config.connect_timeout = Duration::from_secs(10);
+    config.datagram_endpoint = datagram_endpoint.unwrap_or_else(|| {
+        // Both routers place the SAM UDP port one below the TCP bridge port by default.
+        SocketAddr::new(endpoint.ip(), endpoint.port().saturating_sub(1).max(1))
+    });
     config
 }
 
@@ -367,22 +510,32 @@ async fn negotiate(client: &SamClient) -> Option<SamVersion> {
 /// Stream payload row: one side accepts, the other connects, and both verify exact bytes.
 async fn stream_row(options: &Options, client: &SamClient, peer: &SamClient) -> Row {
     let mut row = Row::structural("stream", "stream_payload_bidirectional");
+    let tunnels = live_tunnel_options();
     let session = match client
-        .create_stream_session(&SessionDestination::Transient, "cf-stream", &[])
+        .create_stream_session(
+            &SessionDestination::Transient,
+            &sid(options, "cf-stream"),
+            &tunnels,
+        )
         .await
     {
         Ok(session) => session,
         Err(error) => {
-            return row.failed(&error, "").note("accepting side");
+            return row.failed(&error, "accepting side");
         }
     };
     let peer_session = match peer
-        .create_stream_session(&SessionDestination::Transient, "cf-stream-peer", &[])
+        .create_stream_session(
+            &SessionDestination::Transient,
+            &sid(options, "cf-stream-peer"),
+            &tunnels,
+        )
         .await
     {
         Ok(session) => session,
         Err(error) => {
-            return row.failed(&error, "").note("connecting side");
+            session.close().await;
+            return row.failed(&error, "connecting side");
         }
     };
     let Some(local_identity) = session.identity() else {
@@ -404,82 +557,146 @@ async fn stream_row(options: &Options, client: &SamClient, peer: &SamClient) -> 
     row = row.identity(Some(local_identity)).peer(Some(peer_identity));
     let expected_peer_destination = peer_identity.destination().clone();
     let destination = local_identity.destination().as_str().to_owned();
+    settle_for_live_leasesets().await;
+    // Diagnostic: prove each fresh Destination is resolvable from the other client
+    // before attempting payload; a lookup failure isolates publication, while a
+    // lookup success followed by delivery failure isolates the tunnel data plane.
+    {
+        let peer_b32 = peer_identity.destination().as_str().to_owned();
+        let local_b32 = local_identity.destination().as_str().to_owned();
+        match tokio::time::timeout(
+            Duration::from_secs(60),
+            client.lookup_destination(&peer_b32),
+        )
+        .await
+        {
+            Ok(Ok(_)) => trace_step("debug stream: cross-lookup accept-side dest from peer client ok".to_owned()),
+            Ok(Err(error)) => {
+                trace_step(format!("debug stream: cross-lookup accept-side dest failed: {error}"))
+            }
+            Err(_) => trace_step("debug stream: cross-lookup accept-side dest timed out".to_owned()),
+        }
+        match tokio::time::timeout(
+            Duration::from_secs(60),
+            peer.lookup_destination(&local_b32),
+        )
+        .await
+        {
+            Ok(Ok(_)) => trace_step("debug stream: cross-lookup connect-side dest from main client ok".to_owned()),
+            Ok(Err(error)) => {
+                trace_step(format!("debug stream: cross-lookup connect-side dest failed: {error}"))
+            }
+            Err(_) => trace_step("debug stream: cross-lookup connect-side dest timed out".to_owned()),
+        }
+    }
 
     let session = Arc::new(session);
+    let peer_session = Arc::new(peer_session);
     let max_payload = options.max_payload;
-    let mut accepting = {
-        let session = Arc::clone(&session);
-        tokio::spawn(async move {
-            let mut stream = session.accept().await?;
-            let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
-            let mut received = vec![0; max_payload];
-            stream.read_exact(&mut received).await?;
-            let reply = payload(0xA5, max_payload);
-            stream.write_all(&reply).await?;
-            stream.flush().await?;
-            Ok::<_, SamError>((peer, received, reply.len()))
-        })
-    };
-    let mut connecting = tokio::spawn(async move {
-        let mut stream = peer_session.connect(&destination, None, None).await?;
-        let body = payload(0x5A, max_payload);
-        stream.write_all(&body).await?;
-        stream.flush().await?;
-        let mut reply = vec![0; max_payload];
-        stream.read_exact(&mut reply).await?;
-        Ok::<_, SamError>((body, reply))
-    });
-
     let sent = max_payload;
-    let exchange = tokio::time::timeout(options.control_timeout, async {
-        tokio::join!(&mut accepting, &mut connecting)
-    })
-    .await;
-    let (accepted, connected) = match exchange {
-        Err(_) => {
-            accepting.abort();
-            connecting.abort();
-            session.close().await;
-            return row.skipped(
-                "router_timeout",
-                "timed out waiting for the STREAM payload exchange",
-            );
+    // Fresh client tunnels may need warmup traffic before payload flows reliably; retry
+    // the exchange on the same sessions so already-published LeaseSets keep warming up.
+    // Only transport-level stalls are retried: verdicts and rejections return immediately.
+    let (accepted, connected) = {
+        let mut attempt_outcome = None;
+        let attempts = live_attempts();
+        for attempt in 1..=attempts {
+            let mut accepting = {
+                let session = Arc::clone(&session);
+                tokio::spawn(async move {
+                    let mut stream = session.accept().await?;
+                    trace_step(format!("live trace stream accept peer-blocked at {}", live_ts()));
+                    let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
+                    let mut received = vec![0; max_payload];
+                    stream.read_exact(&mut received).await?;
+                    trace_step(format!("live trace stream accept payload-read at {}", live_ts()));
+                    let reply = payload(0xA5, max_payload);
+                    stream.write_all(&reply).await?;
+                    stream.flush().await?;
+                    trace_step(format!("live trace stream accept reply-written at {}", live_ts()));
+                    Ok::<_, SamError>((peer, received, reply.len()))
+                })
+            };
+            let mut connecting = {
+                let destination = destination.clone();
+                let peer_session = Arc::clone(&peer_session);
+                tokio::spawn(async move {
+                    let mut stream = connect_for_exchange(&peer_session, &destination, 4).await?;
+                    trace_step(format!("live trace stream connect ready at {}", live_ts()));
+                    let body = payload(0x5A, max_payload);
+                    stream.write_all(&body).await?;
+                    stream.flush().await?;
+                    trace_step(format!("live trace stream connect payload-written at {}", live_ts()));
+                    let mut reply = vec![0; max_payload];
+                    stream.read_exact(&mut reply).await?;
+                    trace_step(format!("live trace stream connect reply-read at {}", live_ts()));
+                    Ok::<_, SamError>((body, reply))
+                })
+            };
+
+            let exchange = tokio::time::timeout(options.control_timeout, async {
+                tokio::join!(&mut accepting, &mut connecting)
+            })
+            .await;
+            let retryable = |error: &SamError| {
+                !matches!(error, SamError::Unsupported(_))
+                    && matches!(
+                        i2pr_sam::classify_failure(error),
+                        i2pr_sam::FailureClass::TransportTransient
+                            | i2pr_sam::FailureClass::RouterTransient
+                            | i2pr_sam::FailureClass::CancelledOrClosed
+                    )
+            };
+            match exchange {
+                Err(_) => {
+                    accepting.abort();
+                    connecting.abort();
+                    if attempt < attempts {
+                        eprintln!(
+                            "live retry: STREAM exchange attempt {attempt} timed out, retrying"
+                        );
+                        continue;
+                    }
+                    session.close().await;
+                    peer_session.close().await;
+                    return row.skipped(
+                        "router_timeout",
+                        "timed out waiting for the STREAM payload exchange",
+                    );
+                }
+                Ok((accepting, connecting)) => match (accepting, connecting) {
+                    (Ok(Ok(accepted)), Ok(Ok(connected))) => {
+                        attempt_outcome = Some((accepted, connected));
+                        break;
+                    }
+                    (Ok(Ok(_)), Ok(Err(error))) | (Ok(Err(error)), _) => {
+                        if retryable(&error) && attempt < attempts {
+                            eprintln!(
+                                "live retry: STREAM exchange attempt {attempt} stalled ({error}), retrying"
+                            );
+                            continue;
+                        }
+                        session.close().await;
+                        peer_session.close().await;
+                        return row.failed(&error, "the STREAM exchange did not complete");
+                    }
+                    (Err(join_error), _) | (Ok(Ok(_)), Err(join_error)) => {
+                        session.close().await;
+                        peer_session.close().await;
+                        return row
+                            .skipped(
+                                "subsession_task_failed",
+                                format!("STREAM task failed: {join_error}"),
+                            )
+                            .note("no payload exchange completed");
+                    }
+                },
+            }
         }
-        Ok((accepting, connecting)) => match (accepting, connecting) {
-            (Ok(Ok(accepted)), Ok(Ok(connected))) => (accepted, connected),
-            (Ok(Ok(_)), Ok(Err(error))) => {
-                session.close().await;
-                return row
-                    .failed(&error, "")
-                    .note("the connecting side failed while the accepting side completed");
-            }
-            (Ok(Err(error)), _) => {
-                session.close().await;
-                return row
-                    .failed(&error, "")
-                    .note("the accepting side failed, so no payload crossed the link");
-            }
-            (Err(join_error), _) => {
-                session.close().await;
-                return row
-                    .skipped(
-                        "accepting_side_failed",
-                        format!("accepting side task failed: {join_error}"),
-                    )
-                    .note("no payload exchange completed");
-            }
-            (Ok(Ok(_)), Err(join_error)) => {
-                session.close().await;
-                return row
-                    .skipped(
-                        "connecting_side_failed",
-                        format!("connecting side task failed: {join_error}"),
-                    )
-                    .note("no payload exchange completed");
-            }
-        },
+        attempt_outcome.expect("retry loop always breaks with a verdict")
     };
     session.close().await;
+    peer_session.close().await;
     let (observed_peer, inbound, replied) = accepted;
     let (outbound, reply) = connected;
     let inbound_expected = payload(0x5A, max_payload);
@@ -538,7 +755,11 @@ async fn service_http_row(options: &Options, client: &SamClient) -> Row {
     row = row.peer(Some(&identity));
 
     let session = match client
-        .create_stream_session(&SessionDestination::Transient, "cf-service-http", &[])
+        .create_stream_session(
+            &SessionDestination::Transient,
+            &sid(options, "cf-service-http"),
+            &[],
+        )
         .await
     {
         Ok(session) => session,
@@ -649,17 +870,29 @@ async fn datagram_row(
             "v1/v2-compatible control-socket datagram commands are excluded for this style",
         );
     }
-    let id = format!("cf-{}", style.as_wire().to_lowercase());
+    let id = sid(options, &format!("cf-{}", style.as_wire().to_lowercase()));
     let peer_id = format!("{id}-peer");
+    // i2pd forwards RAW datagrams bare even when HEADER=true is requested, while Java
+    // honors the flag; the matrix only needs exact payload with no source identity, so
+    // request the bare shape explicitly and decode it on both routers.
+    let mut session_options = live_tunnel_options();
+    if style == SessionStyle::Raw {
+        session_options.push(("HEADER".to_owned(), "false".to_owned()));
+    }
     let session = match client
-        .create_datagram_session_with(&SessionDestination::Transient, &id, style, transport, &[])
+        .create_datagram_session_with(
+            &SessionDestination::Transient,
+            &id,
+            style,
+            transport,
+            &session_options,
+        )
         .await
     {
         Ok(session) => session,
         Err(error) => {
             return row
-                .failed(&error, "")
-                .note("this side could not create the session");
+                .failed(&error, "this side could not create the session");
         }
     };
     let peer_session = match peer
@@ -668,7 +901,7 @@ async fn datagram_row(
             &peer_id,
             style,
             transport,
-            &[],
+            &session_options,
         )
         .await
     {
@@ -676,8 +909,7 @@ async fn datagram_row(
         Err(error) => {
             session.close().await;
             return row
-                .failed(&error, "")
-                .note("the peer side could not create a matching session");
+                .failed(&error, "the peer side could not create a matching session");
         }
     };
     let Some(local_identity) = session.identity() else {
@@ -699,29 +931,49 @@ async fn datagram_row(
     row = row.identity(Some(local_identity)).peer(Some(peer_identity));
     let expected_peer_destination = peer_identity.destination().clone();
     let destination = local_identity.destination().as_str().to_owned();
-    let body = payload(0x3C, options.max_payload);
-    if let Err(error) = peer_session.send(&destination, &body, None, None).await {
-        session.close().await;
-        peer_session.close().await;
-        return row
-            .failed(&error, "")
-            .note("peer send failed before delivery");
-    }
-    let received = match tokio::time::timeout(options.control_timeout, session.recv()).await {
-        Ok(Ok(received)) => received,
-        Ok(Err(error)) => {
-            session.close().await;
-            peer_session.close().await;
-            return row.failed(&error, "").note("no datagram was delivered");
+    settle_for_live_leasesets().await;
+    // Datagram retries re-send on the same sessions: each send is independent traffic
+    // that keeps warming the receiver's freshly published LeaseSet.
+    let attempts = live_attempts();
+    let (body, received) = loop {
+        let mut attempt_verdict = None;
+        for attempt in 1..=attempts {
+            let attempt_body = payload(0x3C, options.max_payload);
+            if let Err(error) = peer_session
+                .send(&destination, &attempt_body, None, None)
+                .await
+            {
+                session.close().await;
+                peer_session.close().await;
+                return row.failed(&error, "peer send failed before delivery");
+            }
+            match tokio::time::timeout(options.control_timeout, session.recv()).await {
+                Ok(Ok(attempt_received)) => {
+                    attempt_verdict = Some((attempt_body, attempt_received));
+                    break;
+                }
+                Ok(Err(error)) => {
+                    session.close().await;
+                    peer_session.close().await;
+                    return row.failed(&error, "no datagram was delivered");
+                }
+                Err(_) => {
+                    if attempt < attempts {
+                        eprintln!(
+                            "live retry: datagram exchange attempt {attempt} timed out, resending"
+                        );
+                        continue;
+                    }
+                    session.close().await;
+                    peer_session.close().await;
+                    return row.skipped(
+                        "router_timeout",
+                        "timed out waiting for the datagram receiver session",
+                    );
+                }
+            }
         }
-        Err(_) => {
-            session.close().await;
-            peer_session.close().await;
-            return row.skipped(
-                "router_timeout",
-                "timed out waiting for the datagram receiver session",
-            );
-        }
+        break attempt_verdict.expect("retry loop always breaks with a verdict");
     };
     session.close().await;
     peer_session.close().await;
@@ -805,12 +1057,13 @@ async fn shared_rows(
         "shared_subsession_datagram_payload_single_destination",
     )
     .dialect(dialect);
+    let tunnels = live_tunnel_options();
     let session = match client
         .create_shared_session(
             &SessionDestination::Transient,
-            &format!("cf-shared-{name}"),
+            &sid(options, &format!("cf-shared-{name}")),
             dialect,
-            &[],
+            &tunnels,
         )
         .await
     {
@@ -818,19 +1071,19 @@ async fn shared_rows(
         Err(error) => {
             return vec![
                 stream_row
-                    .failed(&error, "")
-                    .note(format!("{name} shared session could not be created")),
+                    .failed(&error, format!("{name} shared session could not be created")),
                 datagram_row
-                    .failed(&error, "")
-                    .note(format!("{name} shared session could not be created")),
+                    .failed(&error, format!("{name} shared session could not be created")),
             ];
         }
     };
     let identity = session.identity().clone();
     stream_row = stream_row.identity(Some(&identity));
     datagram_row = datagram_row.identity(Some(&identity));
+    let datagram_child_name = sid(options, &format!("cf-shared-dgram-{name}"));
+    let stream_child_name = sid(options, &format!("cf-shared-stream-{name}"));
     let datagram_child = match session
-        .add_child("cf-shared-dgram", SessionStyle::Datagram, &[])
+        .add_child(&datagram_child_name, SessionStyle::Datagram, &[])
         .await
     {
         Ok(child) => child,
@@ -838,16 +1091,14 @@ async fn shared_rows(
             session.close().await;
             return vec![
                 stream_row
-                    .failed(&error, "")
-                    .note("datagram subsession could not be added"),
+                    .failed(&error, "datagram subsession could not be added"),
                 datagram_row
-                    .failed(&error, "")
-                    .note("datagram subsession could not be added"),
+                    .failed(&error, "datagram subsession could not be added"),
             ];
         }
     };
     let stream_child = match session
-        .add_child("cf-shared-stream", SessionStyle::Stream, &[])
+        .add_child(&stream_child_name, SessionStyle::Stream, &[])
         .await
     {
         Ok(child) => child,
@@ -856,11 +1107,9 @@ async fn shared_rows(
             datagram_child.close().await;
             return vec![
                 stream_row
-                    .failed(&error, "")
-                    .note("stream subsession could not be added"),
+                    .failed(&error, "stream subsession could not be added"),
                 datagram_row
-                    .failed(&error, "")
-                    .note("stream subsession could not be added"),
+                    .failed(&error, "stream subsession could not be added"),
             ];
         }
     };
@@ -880,17 +1129,23 @@ async fn shared_rows(
         datagram_row.notes = "subsessions did not report the owner's concrete Destination".into();
         return vec![stream_row, datagram_row];
     }
+    // The owner Destination needs inbound tunnels plus LeaseSet floodfill before the
+    // peer sessions can reach the children; SESSION CREATE OK does not imply it.
+    settle_for_live_leasesets().await;
 
     let stream_child = Arc::new(stream_child);
     let stream_peer = match peer
-        .create_stream_session(&SessionDestination::Transient, "cf-shared-peer", &[])
+        .create_stream_session(
+            &SessionDestination::Transient,
+            &sid(options, &format!("cf-shared-peer-{name}")),
+            &tunnels,
+        )
         .await
     {
         Ok(session) => Some(session),
         Err(error) => {
             stream_row = stream_row
-                .failed(&error, "")
-                .note("peer stream session could not be created");
+                .failed(&error, "peer stream session could not be created");
             None
         }
     };
@@ -900,38 +1155,61 @@ async fn shared_rows(
             let expected_peer_destination = peer_identity.destination().clone();
             let destination = identity.destination().as_str().to_owned();
             let max_payload = options.max_payload;
-            let mut receiving = {
-                let child = Arc::clone(&stream_child);
-                tokio::spawn(async move {
-                    let mut stream = child.accept().await?;
-                    let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
-                    let mut body = vec![0; max_payload];
-                    stream.read_exact(&mut body).await?;
-                    Ok::<_, SamError>((peer, body))
+            let peer_session = std::sync::Arc::new(peer_session);
+            let attempts = live_attempts();
+            // Same-session warmup retries as the ordinary STREAM row: fresh tunnels may
+            // need traffic before payload flows.
+            for attempt in 1..=attempts {
+                let mut receiving = {
+                    let child = Arc::clone(&stream_child);
+                    tokio::spawn(async move {
+                        let mut stream = child.accept().await?;
+                        let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
+                        let mut body = vec![0; max_payload];
+                        stream.read_exact(&mut body).await?;
+                        Ok::<_, SamError>((peer, body))
+                    })
+                };
+                let mut sending = {
+                    let peer_session = std::sync::Arc::clone(&peer_session);
+                    let destination = destination.clone();
+                    tokio::spawn(async move {
+                        let mut stream =
+                            connect_for_exchange(&peer_session, &destination, 4).await?;
+                        let body = payload(0x6B, max_payload);
+                        stream.write_all(&body).await?;
+                        stream.flush().await?;
+                        Ok::<_, SamError>(body)
+                    })
+                };
+                let exchange = tokio::time::timeout(options.control_timeout, async {
+                    tokio::join!(&mut receiving, &mut sending)
                 })
-            };
-            let mut sending = tokio::spawn(async move {
-                let mut stream = peer_session.connect(&destination, None, None).await?;
-                let body = payload(0x6B, max_payload);
-                stream.write_all(&body).await?;
-                stream.flush().await?;
-                Ok::<_, SamError>(body)
-            });
-            let exchange = tokio::time::timeout(options.control_timeout, async {
-                tokio::join!(&mut receiving, &mut sending)
-            })
-            .await;
-            match exchange {
-                Err(_) => {
-                    receiving.abort();
-                    sending.abort();
-                    stream_row = stream_row.skipped(
-                        "router_timeout",
-                        "timed out waiting for the shared STREAM payload exchange",
-                    );
-                }
-                Ok((receiving_result, sending_result)) => {
-                    match (receiving_result, sending_result) {
+                .await;
+                let retryable = |error: &SamError| {
+                    !matches!(error, SamError::Unsupported(_))
+                        && matches!(
+                            i2pr_sam::classify_failure(error),
+                            i2pr_sam::FailureClass::TransportTransient
+                                | i2pr_sam::FailureClass::RouterTransient
+                                | i2pr_sam::FailureClass::CancelledOrClosed
+                        )
+                };
+                match exchange {
+                    Err(_) => {
+                        receiving.abort();
+                        sending.abort();
+                        if attempt < attempts {
+                            eprintln!("live retry: shared STREAM attempt {attempt} timed out, retrying");
+                            continue;
+                        }
+                        stream_row = stream_row.skipped(
+                            "router_timeout",
+                            "timed out waiting for the shared STREAM payload exchange",
+                        );
+                    }
+                    Ok((receiving_result, sending_result)) => {
+                        match (receiving_result, sending_result) {
                         (Ok(Ok((peer_observed, inbound))), Ok(Ok(outbound))) => {
                             let expected = payload(0x6B, max_payload);
                             let exact = inbound == expected && outbound == expected;
@@ -962,18 +1240,27 @@ async fn shared_rows(
                             }
                         }
                         (Ok(Err(error)), _) | (_, Ok(Err(error))) => {
+                            if retryable(&error) && attempt < attempts {
+                                eprintln!("live retry: shared STREAM attempt {attempt} stalled ({error}), retrying");
+                                continue;
+                            }
                             stream_row = stream_row
                                 .failed(&error, "shared STREAM exchange did not complete");
+                            break;
                         }
                         (Err(error), _) | (_, Err(error)) => {
                             stream_row = stream_row.skipped(
                                 "subsession_task_failed",
                                 format!("shared STREAM task failed: {error}"),
                             );
+                            break;
                         }
+                        }
+                        break;
                     }
                 }
             }
+            peer_session.close().await;
         } else {
             stream_row = stream_row.skipped(
                 "identity_unavailable",
@@ -986,18 +1273,17 @@ async fn shared_rows(
     let peer_datagram = match peer
         .create_datagram_session_with(
             &SessionDestination::Transient,
-            "cf-shared-dgram-peer",
+            &sid(options, &format!("cf-shared-dgram-peer-{name}")),
             SessionStyle::Datagram,
             DatagramTransport::UdpForward,
-            &[],
+            &tunnels,
         )
         .await
     {
         Ok(peer_session) => Some(peer_session),
         Err(error) => {
             datagram_row = datagram_row
-                .failed(&error, "")
-                .note("peer datagram session could not be created");
+                .failed(&error, "peer datagram session could not be created");
             None
         }
     };
@@ -1006,16 +1292,20 @@ async fn shared_rows(
             datagram_row = datagram_row.peer(Some(peer_identity));
             let expected_peer_destination = peer_identity.destination().as_str().to_owned();
             let destination = identity.destination().as_str().to_owned();
-            let body = payload(0x7C, options.max_payload);
-            let receive = {
-                let child = Arc::clone(&datagram_child);
-                tokio::spawn(async move { child.recv_datagram().await })
-            };
-            if let Err(error) = peer_session.send(&destination, &body, None, None).await {
-                datagram_row = datagram_row
-                    .failed(&error, "shared datagram send failed")
-                    .note("peer datagram send failed before the shared child received a payload");
-            } else {
+            let attempts = live_attempts();
+            // Same-session resends as the ordinary datagram row: each send is independent
+            // traffic that keeps warming the owner's freshly published LeaseSet.
+            for attempt in 1..=attempts {
+                let body = payload(0x7C, options.max_payload);
+                let receive = {
+                    let child = Arc::clone(&datagram_child);
+                    tokio::spawn(async move { child.recv_datagram().await })
+                };
+                if let Err(error) = peer_session.send(&destination, &body, None, None).await {
+                    datagram_row = datagram_row
+                        .failed(&error, "peer datagram send failed before the shared child received a payload");
+                    break;
+                }
                 match tokio::time::timeout(options.control_timeout, receive).await {
                     Ok(Ok(Ok(ReceivedDatagram::Authenticated(message)))) => {
                         let exact = message.payload == body;
@@ -1060,12 +1350,18 @@ async fn shared_rows(
                         );
                     }
                     Err(_) => {
+                        if attempt < attempts {
+                            eprintln!("live retry: shared DATAGRAM attempt {attempt} timed out, resending");
+                            continue;
+                        }
                         datagram_row = datagram_row.skipped(
                             "router_timeout",
                             "timed out waiting for the shared DATAGRAM child response",
                         );
+                        break;
                     }
                 }
+                break;
             }
             peer_session.close().await;
         } else {
@@ -1076,7 +1372,7 @@ async fn shared_rows(
             );
         }
     }
-    if let Err(error) = session.remove_child("cf-shared-stream").await {
+    if let Err(error) = session.remove_child(&stream_child_name).await {
         stream_row.outcome = Outcome::Fail;
         stream_row.diagnostic_category = Some("child_removal_failed".into());
         stream_row.notes = format!("shared STREAM child removal failed: {error}");
@@ -1167,7 +1463,11 @@ async fn main() -> ExitCode {
 
 async fn run() -> Result<ExitCode, (u8, String)> {
     let options = parse_options().map_err(|error| (2, format!("usage error: {error}")))?;
-    let config = config_for(options.endpoint, options.control_timeout);
+    let config = config_for(
+        options.endpoint,
+        options.control_timeout,
+        options.datagram_endpoint,
+    );
     let client = SamClient::connect(config).await.map_err(|error| {
         (
             2,
@@ -1179,7 +1479,12 @@ async fn run() -> Result<ExitCode, (u8, String)> {
 
     let peer = match options.peer_endpoint {
         Some(endpoint) => {
-            match SamClient::connect(config_for(endpoint, options.control_timeout)).await {
+            match SamClient::connect(config_for(
+                endpoint,
+                options.control_timeout,
+                options.datagram_endpoint,
+            ))
+            .await {
                 Ok(client) => Some((client, endpoint)),
                 Err(error) => {
                     eprintln!("warning: peer endpoint {endpoint} unreachable: {error}");

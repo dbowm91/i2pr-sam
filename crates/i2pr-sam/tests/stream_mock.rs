@@ -11,6 +11,12 @@
 //!   not part of the peer block must be pushed back and still delivered byte-exact.
 //! * **C** — `SILENT=true` announces nothing, so nothing may be consumed before payload.
 //! * **D** — `STREAM CONNECT` has no identity block; payload starts immediately.
+//! * **E** — deployed Java I2P folds the port fields onto the Destination line
+//!   (`$destination FROM_PORT=0 TO_PORT=0`, observed live 2026-10-08); the peer
+//!   reader must accept that single-line shape as well as the multi-line block.
+//! * **F** — live payload is binary: a first payload line that is not valid UTF-8 must
+//!   be pushed back for the application, never mistaken for a blank peer-block
+//!   terminator (which would swallow those bytes and stall the stream).
 
 mod support;
 
@@ -273,6 +279,78 @@ async fn a2_non_silent_stream_accept_accepts_a_base64_padded_peer_destination() 
     .expect("payload read timed out")
     .unwrap();
     assert_eq!(received, PAYLOAD);
+    bridge.assert_scripts_clean();
+    session.close().await;
+}
+
+/// E: Java I2P announces the peer on one line with inline port fields.
+#[tokio::test]
+async fn e_non_silent_stream_accept_accepts_single_line_peer_block_with_inline_ports() {
+    const PAYLOAD: &[u8] = b"single-line-peer-block\npayload-bytes";
+    let mut reply = format!("{PEER_DESTINATION} FROM_PORT=1 TO_PORT=2\n").into_bytes();
+    reply.extend_from_slice(PAYLOAD);
+    let bridge = support::MockBridge::start_with(accept_scripts(
+        &reply,
+        Match::exact("STREAM ACCEPT ID=listener"),
+    ))
+    .await;
+    let session = accept_session(&bridge).await;
+
+    let mut stream = session.accept().await.unwrap();
+
+    let peer = stream
+        .peer()
+        .expect("a single-line peer block must still announce the peer");
+    assert_eq!(peer.destination.as_str(), PEER_DESTINATION);
+    assert_eq!(peer.from_port.map(|port| port.get()), Some(1));
+    assert_eq!(peer.to_port.map(|port| port.get()), Some(2));
+    let mut received = vec![0u8; PAYLOAD.len()];
+    tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        stream.read_exact(&mut received),
+    )
+    .await
+    .expect("payload read timed out")
+    .unwrap();
+    assert_eq!(received, PAYLOAD);
+    bridge.assert_scripts_clean();
+    session.close().await;
+}
+
+/// F: binary payload after a single-line peer block must survive byte-exact.
+///
+/// The first payload line here starts with `0xED 0x0C`, which is not valid UTF-8: the
+/// peer-block reader must push it back rather than reading it as a blank terminator.
+#[tokio::test]
+async fn f_non_utf8_first_payload_line_is_pushed_back_not_swallowed() {
+    const PAYLOAD: &[u8] = b"\xed\x0c+Ji\x88payload-bytes\nsecond-line";
+    let mut reply = format!("{PEER_DESTINATION} FROM_PORT=0 TO_PORT=0\n").into_bytes();
+    reply.extend_from_slice(PAYLOAD);
+    let bridge = support::MockBridge::start_with(accept_scripts(
+        &reply,
+        Match::exact("STREAM ACCEPT ID=listener"),
+    ))
+    .await;
+    let session = accept_session(&bridge).await;
+
+    let mut stream = session.accept().await.unwrap();
+
+    assert!(
+        stream.peer().is_some(),
+        "the peer block must still parse before binary payload"
+    );
+    let mut received = vec![0u8; PAYLOAD.len()];
+    tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        stream.read_exact(&mut received),
+    )
+    .await
+    .expect("payload read timed out")
+    .unwrap();
+    assert_eq!(
+        received, PAYLOAD,
+        "non-UTF8 payload bytes must round-trip exactly, not be eaten by framing"
+    );
     bridge.assert_scripts_clean();
     session.close().await;
 }

@@ -215,8 +215,12 @@ pub struct StreamPeer {
 /// Consume the peer identity block that precedes payload on a non-silent `STREAM ACCEPT`.
 ///
 /// The specification sends `$destination`, then optional `FROM_PORT=`/`TO_PORT=` lines, then
-/// a blank line. Any line that is not part of that block is pushed back to the payload
-/// reader so a router that omits the terminator can never corrupt the first payload bytes.
+/// a blank line. Deployed Java I2P instead folds the port fields onto the destination line
+/// (`$destination FROM_PORT=0 TO_PORT=0`), so inline fields are accepted there too. Any line
+/// that is not part of that block is pushed back to the payload reader so a router that
+/// omits the terminator can never corrupt the first payload bytes. The continuation check
+/// works on bytes: live payload is binary and usually not valid UTF-8, so decoding before
+/// the blank check would mistake it for an empty terminator and swallow those bytes.
 pub async fn read_stream_peer<R: AsyncBufRead + Unpin>(
     reader: &mut R,
     deadline: Duration,
@@ -235,29 +239,53 @@ pub async fn read_stream_peer<R: AsyncBufRead + Unpin>(
     // "contains `=` therefore it is not a Destination" test rejects exactly the shape a
     // router really sends. What separates the two is whether the token begins with a known
     // SAM field name, which a Destination never does.
-    if !looks_like_bare_token(text) {
-        return Err(SamError::Rejected(
-            "stream accept did not announce a peer Destination".into(),
-        ));
-    }
+    let mut tokens = text.split_whitespace();
+    let destination_token =
+        tokens
+            .next()
+            .filter(|token| looks_like_bare_token(token))
+            .ok_or_else(|| {
+                SamError::Rejected("stream accept did not announce a peer Destination".into())
+            })?;
     let mut peer = StreamPeer {
-        destination: Destination::new(text)
+        destination: Destination::new(destination_token)
             .map_err(|_| SamError::Rejected("stream peer Destination is invalid".into()))?,
         from_port: None,
         to_port: None,
     };
+    for token in tokens {
+        let (key, value) = token.split_once('=').ok_or_else(|| {
+            SamError::Rejected("stream peer identity line is malformed".into())
+        })?;
+        let parsed = value.parse::<u16>().map(Port::new);
+        match (key, parsed) {
+            ("FROM_PORT", Ok(port)) => peer.from_port = Some(port),
+            ("TO_PORT", Ok(port)) => peer.to_port = Some(port),
+            _ => {
+                return Err(SamError::Rejected(
+                    "stream peer identity line is malformed".into(),
+                ));
+            }
+        }
+    }
     let mut pushed_back = Vec::new();
     loop {
         let line = match timeout(deadline, read_line_bounded(reader, ceiling)).await {
             Ok(result) => result?,
             Err(_) => break,
         };
-        let text = str::from_utf8(&line).unwrap_or_default();
-        let trimmed = text.trim_end_matches(['\r', '\n']);
-        if trimmed.is_empty() {
+        let content = strip_line_ending(&line);
+        if content.is_empty() {
             break;
         }
-        let (key, value) = match trimmed.split_once('=') {
+        let text = match str::from_utf8(content) {
+            Ok(text) => text,
+            Err(_) => {
+                pushed_back.extend_from_slice(&line);
+                break;
+            }
+        };
+        let (key, value) = match text.split_once('=') {
             Some(pair) => pair,
             None => {
                 pushed_back.extend_from_slice(&line);
@@ -276,6 +304,15 @@ pub async fn read_stream_peer<R: AsyncBufRead + Unpin>(
         }
     }
     Ok((peer, pushed_back))
+}
+
+/// The line without its trailing newline; a blank line yields an empty slice.
+fn strip_line_ending(line: &[u8]) -> &[u8] {
+    let mut content: &[u8] = line;
+    while content.last().is_some_and(|b| *b == b'\n' || *b == b'\r') {
+        content = &content[..content.len() - 1];
+    }
+    content
 }
 
 /// Split a `Control` connection into a demultiplexing datagram link.
@@ -385,7 +422,12 @@ impl ControlDatagramLink {
     }
 
     /// Send one direct datagram, written as a single frame to avoid interleaving.
-    pub async fn send_payload(&self, command: &str, payload: &[u8]) -> Result<Line, SamError> {
+    ///
+    /// SAM v1 sends carry no reply: the router answers nothing, so the send completes once
+    /// the bytes reach the socket. Delivery is proven by receipt, never by a reply line,
+    /// which is also why no waiter is registered here — an unsolicited later line must
+    /// never be mistaken for this send's answer.
+    pub async fn send_payload(&self, command: &str, payload: &[u8]) -> Result<(), SamError> {
         if payload.is_empty() || payload.len() > self.max_datagram_bytes {
             return Err(SamError::Rejected(
                 "datagram payload outside configured bounds".into(),
@@ -394,8 +436,6 @@ impl ControlDatagramLink {
         if self.is_dead() {
             return Err(SamError::Closed);
         }
-        let (sender, receiver) = oneshot::channel();
-        self.waiters.lock().await.push_back(sender);
         let write_result = {
             let mut writer = self.writer.lock().await;
             match writer.write_all(command.as_bytes()).await {
@@ -404,23 +444,12 @@ impl ControlDatagramLink {
             }
         };
         if let Err(error) = write_result {
-            let error = SamError::Io(error);
-            self.fail_waiters(&error).await;
-            return Err(error);
+            return Err(SamError::Io(error));
         }
         if let Err(error) = self.writer.lock().await.flush().await {
-            let error = SamError::Io(error);
-            self.fail_waiters(&error).await;
-            return Err(error);
+            return Err(SamError::Io(error));
         }
-        match timeout(self.control_timeout, receiver).await {
-            Ok(Ok(reply)) => reply,
-            Ok(Err(_)) => Err(SamError::Closed),
-            Err(_) => {
-                self.fail_waiters(&SamError::Timeout).await;
-                Err(SamError::Timeout)
-            }
-        }
+        Ok(())
     }
 
     async fn fail_waiters(&self, error: &SamError) {

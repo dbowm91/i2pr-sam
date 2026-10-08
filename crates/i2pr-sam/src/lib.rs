@@ -919,6 +919,18 @@ impl SamClient {
                 "HOST".into(),
                 self.config.datagram_forward.advertised_host.to_string(),
             ));
+            // Java I2P only opens its SAM UDP listener on demand: without these options
+            // the bridge has no datagram port and forwarded frames vanish silently.
+            // i2pd already listens on its configured UDP port and carries these as
+            // inert session options.
+            structural.push((
+                "sam.udp.host".into(),
+                self.config.datagram_endpoint.ip().to_string(),
+            ));
+            structural.push((
+                "sam.udp.port".into(),
+                self.config.datagram_endpoint.port().to_string(),
+            ));
         } else if style == SessionStyle::Raw && header {
             structural.push(("HEADER".into(), "true".into()));
         }
@@ -974,19 +986,30 @@ impl SamClient {
         // Anything the request/response phase already buffered must survive the switch to
         // demultiplexed mode, or a delivery that arrived early would be silently dropped.
         let leftover = control.reader.buffer().to_vec();
-        let link = match transport {
-            DatagramTransport::ControlSocketV1 => Some(Arc::new(ControlDatagramLink::new(
-                id.to_owned(),
-                style,
-                control.reader.into_inner(),
-                leftover,
-                self.config.control_timeout,
-                self.config.max_frame_bytes,
-                self.config.max_datagram_bytes,
-                self.config.max_inbox_datagrams,
-                self.config.max_inbox_bytes,
-            ))),
-            DatagramTransport::UdpForward => None,
+        let mut control_slot = Some(control);
+        let (link, retained) = match transport {
+            DatagramTransport::ControlSocketV1 => {
+                let control = control_slot
+                    .take()
+                    .expect("session control socket is present");
+                (
+                    Some(Arc::new(ControlDatagramLink::new(
+                        id.to_owned(),
+                        style,
+                        control.reader.into_inner(),
+                        leftover,
+                        self.config.control_timeout,
+                        self.config.max_frame_bytes,
+                        self.config.max_datagram_bytes,
+                        self.config.max_inbox_datagrams,
+                        self.config.max_inbox_bytes,
+                    ))),
+                    None,
+                )
+            }
+            // For UDP-forwarded sessions the control socket itself must stay open for the
+            // router-side session to survive.
+            DatagramTransport::UdpForward => (None, control_slot.take()),
         };
         Ok(DatagramSession {
             id: id.to_owned(),
@@ -998,6 +1021,7 @@ impl SamClient {
             identity,
             udp_socket,
             link,
+            control: Mutex::new(retained),
             closed: AtomicBool::new(false),
             closed_notify: Arc::new(Notify::new()),
             _lifetime: ReleaseOnDrop::new(resource::session_closed),
@@ -1046,6 +1070,12 @@ pub struct DatagramSession {
     identity: Option<SessionIdentity>,
     udp_socket: Option<UdpSocket>,
     link: Option<Arc<ControlDatagramLink>>,
+    /// The session's control socket. SAM sessions live and die with this socket: dropping
+    /// it here would kill the router-side session immediately after a successful CREATE,
+    /// and every later send would fail with session-not-found. It is retained for
+    /// UDP-forwarded sessions (whose traffic uses the forwarding socket) exactly as for
+    /// stream and shared sessions, and released on close.
+    control: Mutex<Option<Control<TcpStream>>>,
     closed: AtomicBool,
     closed_notify: Arc<Notify>,
     _lifetime: ReleaseOnDrop,
@@ -1097,10 +1127,8 @@ impl DatagramSession {
                     to_port,
                     protocol,
                 )?;
-                let reply = link.send_payload(&command, payload).await?;
-                if reply.field("RESULT") != Some("OK") {
-                    return Err(rejection(&reply));
-                }
+                // No reply is expected on this transport; delivery is proven by receipt.
+                link.send_payload(&command, payload).await?;
                 Ok(())
             }
             (Some(_), DatagramTransport::UdpForward) => Err(SamError::Rejected(
@@ -1189,6 +1217,9 @@ impl DatagramSession {
         if let Some(link) = &self.link {
             link.close().await;
         }
+        // Dropping the control socket ends the router-side session; retaining it until
+        // now is what keeps UDP-forwarded sessions alive between sends.
+        self.control.lock().await.take();
     }
 }
 

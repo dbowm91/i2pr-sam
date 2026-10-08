@@ -1,179 +1,302 @@
 {
   "capabilities": {
-    "datagram": "unknown",
-    "datagram2": "unknown",
-    "datagram3": "unknown",
-    "datagram_direct": "unknown",
-    "raw": "unknown",
-    "raw_direct": "unknown",
-    "session_identity_lookup": "unknown",
-    "shared_master": "unknown",
-    "shared_primary": "unknown",
-    "stream": "unknown"
+    "datagram": "supported",
+    "datagram2": "supported",
+    "datagram3": "supported",
+    "datagram_direct": "supported",
+    "raw": "supported",
+    "raw_direct": "supported",
+    "session_identity_lookup": "supported",
+    "shared_master": "supported",
+    "shared_primary": "supported",
+    "stream": "supported"
   },
   "endpoint": "127.0.0.1:7656",
-  "generated_at": "2026-10-08T03:06:35Z",
-  "local_identity": null,
+  "generated_at": "2026-10-08T21:41:24Z",
+  "local_identity": {
+    "destination": "870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS~O9M~l-PeB79Xi9HjOsQqNTiRP2HRUhDi6hpCLe0lhL870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS~O9M~l-PeB79Xi9HjOsQqNTiRP2HRUhDi6hpCLe0lhL870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS~O9M~l-PeB79Xi9HjOsQqNTiRP2HRUhDi6hpCLe0lhL870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS1wl96VzGS8s-yR~EplndpJIhC22NQdFd6cLOI4swvR~BQAEAAcAAA==",
+    "destination_hash": "7d9a6e7540257f9854fdf9c487ff28a8f33a696840f99b06d2fa5978ede8e910"
+  },
   "negotiated_sam_version": "3.3",
-  "peer_endpoint": "127.0.0.1:19856",
+  "peer_endpoint": "127.0.0.1:7656",
   "peer_router": null,
   "peer_router_version_or_sha": null,
   "plan": "full",
   "router": "Java I2P",
-  "router_version_or_sha": "a629ec7c9c675dd252d005fb881efd92e8e6ba27",
+  "router_version_or_sha": "2.13.1-1~ubuntu4",
   "rows": [
     {
-      "diagnostic_category": "peer_identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
+        "bytes_received": 1186,
+        "bytes_sent": 139,
         "exact_payload_match": false,
+        "http_body_bytes": 998,
+        "http_status": 200,
         "identity_proven": false
       },
       "feature": "stream",
-      "local_identity": null,
-      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
-      "operation": "stream_payload_bidirectional",
-      "peer_identity": null,
-      "result": "not_run",
+      "local_identity": {
+        "destination": "870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS~O9M~l-PeB79Xi9HjOsQqNTiRP2HRUhDi6hpCLe0lhL870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS~O9M~l-PeB79Xi9HjOsQqNTiRP2HRUhDi6hpCLe0lhL870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS~O9M~l-PeB79Xi9HjOsQqNTiRP2HRUhDi6hpCLe0lhL870z-X494Hv1eL0eM6xCo1OJE~YdFSEOLqGkIt7SWEvzvTP5fj3ge~V4vR4zrEKjU4kT9h0VIQ4uoaQi3tJYS1wl96VzGS8s-yR~EplndpJIhC22NQdFd6cLOI4swvR~BQAEAAcAAA==",
+        "destination_hash": "7d9a6e7540257f9854fdf9c487ff28a8f33a696840f99b06d2fa5978ede8e910"
+      },
+      "notes": "target=hqlkjlb3ehnwjd2i64ikghjlmdrz3ws43yc2nehhdilvgwwpxjuq.b32.i2p; response_status=200; response_bytes=1186; response_body_bytes=998; success requires HTTP 2xx and nonempty body",
+      "operation": "stream_http_service_request_response",
+      "peer_identity": {
+        "destination": "hVEogD65VXekdM2afL1LEJMxmh4xISGldVj7B34dPJSFUSiAPrlVd6R0zZp8vUsQkzGaHjEhIaV1WPsHfh08lIVRKIA-uVV3pHTNmny9SxCTMZoeMSEhpXVY-wd-HTyUhVEogD65VXekdM2afL1LEJMxmh4xISGldVj7B34dPJSFUSiAPrlVd6R0zZp8vUsQkzGaHjEhIaV1WPsHfh08lIVRKIA-uVV3pHTNmny9SxCTMZoeMSEhpXVY-wd-HTyUhVEogD65VXekdM2afL1LEJMxmh4xISGldVj7B34dPJSFUSiAPrlVd6R0zZp8vUsQkzGaHjEhIaV1WPsHfh08lIVRKIA-uVV3pHTNmny9SxCTMZoeMSEhpXVY-wd-HTyUhVEogD65VXekdM2afL1LEJMxmh4xISGldVj7B34dPJSFUSiAPrlVd6R0zZp8vUsQkzGaHjEhIaV1WPsHfh08lIpAfWjc2KMSr~Fqcq4g39H2P-RaOZ7OgTlD0p5onCo0BQAEAAcAAA==",
+        "destination_hash": "3c16a4ac3b21db648f48f710a31d2b60e39dda5cde05a690e71a17535acfba69"
+      },
+      "result": "pass",
       "shared_dialect": null
     },
     {
-      "diagnostic_category": "peer_identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
-        "identity_proven": false
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": true
       },
       "feature": "datagram",
-      "local_identity": null,
-      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "local_identity": {
+        "destination": "45q-fj7oRoTXI5hncce5KXGzQcZAP3VtEq1o5b5Xm3fjmr5-PuhGhNcjmGdxx7kpcbNBxkA~dW0SrWjlvlebd-Oavn4-6EaE1yOYZ3HHuSlxs0HGQD91bRKtaOW-V5t345q-fj7oRoTXI5hncce5KXGzQcZAP3VtEq1o5b5Xm3fjmr5-PuhGhNcjmGdxx7kpcbNBxkA~dW0SrWjlvlebd-Oavn4-6EaE1yOYZ3HHuSlxs0HGQD91bRKtaOW-V5t345q-fj7oRoTXI5hncce5KXGzQcZAP3VtEq1o5b5Xm3fjmr5-PuhGhNcjmGdxx7kpcbNBxkA~dW0SrWjlvlebd-Oavn4-6EaE1yOYZ3HHuSlxs0HGQD91bRKtaOW-V5t345q-fj7oRoTXI5hncce5KXGzQcZAP3VtEq1o5b5Xm3fjmr5-PuhGhNcjmGdxx7kpcbNBxkA~dW0SrWjlvlebdwNsgSLfh2PbloeFsq3LyxyqqK339ZGYZWp~reJMVgR6BQAEAAcAAA==",
+        "destination_hash": "0fb4c194991e1ae150c2858ec2ebaa96232009a8fb02fe8fa44873ea532b85fe"
+      },
+      "notes": "datagram payload matched exactly",
       "operation": "datagram_payload_exchange_udp_forward",
-      "peer_identity": null,
-      "result": "not_run",
+      "peer_identity": {
+        "destination": "YEqjbcE~y1-ZCI2NftEPCIxzJORhrSrMRl5YStzy6LxgSqNtwT~LX5kIjY1-0Q8IjHMk5GGtKsxGXlhK3PLovGBKo23BP8tfmQiNjX7RDwiMcyTkYa0qzEZeWErc8ui8YEqjbcE~y1-ZCI2NftEPCIxzJORhrSrMRl5YStzy6LxgSqNtwT~LX5kIjY1-0Q8IjHMk5GGtKsxGXlhK3PLovGBKo23BP8tfmQiNjX7RDwiMcyTkYa0qzEZeWErc8ui8YEqjbcE~y1-ZCI2NftEPCIxzJORhrSrMRl5YStzy6LxgSqNtwT~LX5kIjY1-0Q8IjHMk5GGtKsxGXlhK3PLovGBKo23BP8tfmQiNjX7RDwiMcyTkYa0qzEZeWErc8ui8YEqjbcE~y1-ZCI2NftEPCIxzJORhrSrMRl5YStzy6LxgSqNtwT~LX5kIjY1-0Q8IjHMk5GGtKsxGXlhK3PLovPct5pZGLu~b5tpjYBhzDVF-6pjzZSuolfAhr~ZGsyLaBQAEAAcAAA==",
+        "destination_hash": "8f386dfc26a8fed73ba51b680f78b90460e0e986ed87db9b69a65b5b5a7ae386"
+      },
+      "result": "pass",
       "shared_dialect": null
     },
     {
-      "diagnostic_category": "peer_identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
-        "identity_proven": false
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": true
       },
       "feature": "datagram",
-      "local_identity": null,
-      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "local_identity": {
+        "destination": "kIEwQtnH5O~iMnZDFQ6~75Xp5CKWEsngU3eap4i9X8aQgTBC2cfk7-IydkMVDr~vlenkIpYSyeBTd5qniL1fxpCBMELZx-Tv4jJ2QxUOv--V6eQilhLJ4FN3mqeIvV~GkIEwQtnH5O~iMnZDFQ6~75Xp5CKWEsngU3eap4i9X8aQgTBC2cfk7-IydkMVDr~vlenkIpYSyeBTd5qniL1fxpCBMELZx-Tv4jJ2QxUOv--V6eQilhLJ4FN3mqeIvV~GkIEwQtnH5O~iMnZDFQ6~75Xp5CKWEsngU3eap4i9X8aQgTBC2cfk7-IydkMVDr~vlenkIpYSyeBTd5qniL1fxpCBMELZx-Tv4jJ2QxUOv--V6eQilhLJ4FN3mqeIvV~GkIEwQtnH5O~iMnZDFQ6~75Xp5CKWEsngU3eap4i9X8aQgTBC2cfk7-IydkMVDr~vlenkIpYSyeBTd5qniL1fxpW0BVaygTvUySb1YgGw10cRNGeFKRyK6auDR-TJY-VvBQAEAAcAAA==",
+        "destination_hash": "61740505479d2aa8b5ed8cbce9e7239daac0f8077239ff3031029321d77219fe"
+      },
+      "notes": "datagram payload matched exactly",
       "operation": "datagram_payload_exchange_control_socket",
-      "peer_identity": null,
-      "result": "not_run",
+      "peer_identity": {
+        "destination": "79Z6esCJC63fBZfx96m~VsZj6Loe7hsdwvmJcxaGEu~v1np6wIkLrd8Fl~H3qb9WxmPouh7uGx3C-YlzFoYS7-~WenrAiQut3wWX8fepv1bGY-i6Hu4bHcL5iXMWhhLv79Z6esCJC63fBZfx96m~VsZj6Loe7hsdwvmJcxaGEu~v1np6wIkLrd8Fl~H3qb9WxmPouh7uGx3C-YlzFoYS7-~WenrAiQut3wWX8fepv1bGY-i6Hu4bHcL5iXMWhhLv79Z6esCJC63fBZfx96m~VsZj6Loe7hsdwvmJcxaGEu~v1np6wIkLrd8Fl~H3qb9WxmPouh7uGx3C-YlzFoYS7-~WenrAiQut3wWX8fepv1bGY-i6Hu4bHcL5iXMWhhLv79Z6esCJC63fBZfx96m~VsZj6Loe7hsdwvmJcxaGEu~v1np6wIkLrd8Fl~H3qb9WxmPouh7uGx3C-YlzFoYS70aBZMourihizGkOAalASsIidN8uu-JV-kcEX3j6ds2wBQAEAAcAAA==",
+        "destination_hash": "d2994f6a8121800fbc90f42c3c243dbe16fcd33b7dc40880a33503b66c0fcdfa"
+      },
+      "result": "pass",
       "shared_dialect": null
     },
     {
-      "diagnostic_category": "peer_identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
         "identity_proven": false
       },
       "feature": "raw",
-      "local_identity": null,
-      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "local_identity": {
+        "destination": "vxWXDOIMF9h36GWC~XZt8COaNGQ6xCjf1Jo6~gXp52C~FZcM4gwX2HfoZYL9dm3wI5o0ZDrEKN~Umjr-BennYL8VlwziDBfYd-hlgv12bfAjmjRkOsQo39SaOv4F6edgvxWXDOIMF9h36GWC~XZt8COaNGQ6xCjf1Jo6~gXp52C~FZcM4gwX2HfoZYL9dm3wI5o0ZDrEKN~Umjr-BennYL8VlwziDBfYd-hlgv12bfAjmjRkOsQo39SaOv4F6edgvxWXDOIMF9h36GWC~XZt8COaNGQ6xCjf1Jo6~gXp52C~FZcM4gwX2HfoZYL9dm3wI5o0ZDrEKN~Umjr-BennYL8VlwziDBfYd-hlgv12bfAjmjRkOsQo39SaOv4F6edgvxWXDOIMF9h36GWC~XZt8COaNGQ6xCjf1Jo6~gXp52C~FZcM4gwX2HfoZYL9dm3wI5o0ZDrEKN~Umjr-BennYKPXqQPAi7wR2rqCNkC28D6d~ODqSDjDsCdEYit4MelCBQAEAAcAAA==",
+        "destination_hash": "071034d765f47b52d8b6cb1a74bd3c1b85def06542197dc286042f1d5fc97e88"
+      },
+      "notes": "datagram payload matched exactly; RAW carries no source identity by specification",
       "operation": "datagram_payload_exchange_udp_forward",
-      "peer_identity": null,
-      "result": "not_run",
+      "peer_identity": {
+        "destination": "TI7BhkblBdrNFpksyu5YjffXp43bcT9VZP52Yu48W2JMjsGGRuUF2s0WmSzK7liN99enjdtxP1Vk~nZi7jxbYkyOwYZG5QXazRaZLMruWI3316eN23E~VWT-dmLuPFtiTI7BhkblBdrNFpksyu5YjffXp43bcT9VZP52Yu48W2JMjsGGRuUF2s0WmSzK7liN99enjdtxP1Vk~nZi7jxbYkyOwYZG5QXazRaZLMruWI3316eN23E~VWT-dmLuPFtiTI7BhkblBdrNFpksyu5YjffXp43bcT9VZP52Yu48W2JMjsGGRuUF2s0WmSzK7liN99enjdtxP1Vk~nZi7jxbYkyOwYZG5QXazRaZLMruWI3316eN23E~VWT-dmLuPFtiTI7BhkblBdrNFpksyu5YjffXp43bcT9VZP52Yu48W2JMjsGGRuUF2s0WmSzK7liN99enjdtxP1Vk~nZi7jxbYsugpUiQZElXinKPAX7QlZcBXjY9rIZaKJPrHVYuFK7WBQAEAAcAAA==",
+        "destination_hash": "1ed70fbc0fdeda872c7ef46181db4d59150e45cf9c3d228ee02d3cd862e678a0"
+      },
+      "result": "pass",
       "shared_dialect": null
     },
     {
-      "diagnostic_category": "peer_identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
         "identity_proven": false
       },
       "feature": "raw",
-      "local_identity": null,
-      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "local_identity": {
+        "destination": "mjHKld8Oq2S6xRpoZigUCjQTdmrm0nQlONJ88YPh086aMcqV3w6rZLrFGmhmKBQKNBN2aubSdCU40nzxg-HTzpoxypXfDqtkusUaaGYoFAo0E3Zq5tJ0JTjSfPGD4dPOmjHKld8Oq2S6xRpoZigUCjQTdmrm0nQlONJ88YPh086aMcqV3w6rZLrFGmhmKBQKNBN2aubSdCU40nzxg-HTzpoxypXfDqtkusUaaGYoFAo0E3Zq5tJ0JTjSfPGD4dPOmjHKld8Oq2S6xRpoZigUCjQTdmrm0nQlONJ88YPh086aMcqV3w6rZLrFGmhmKBQKNBN2aubSdCU40nzxg-HTzpoxypXfDqtkusUaaGYoFAo0E3Zq5tJ0JTjSfPGD4dPOmjHKld8Oq2S6xRpoZigUCjQTdmrm0nQlONJ88YPh086aMcqV3w6rZLrFGmhmKBQKNBN2aubSdCU40nzxg-HTzo8K95Qj~BgD3sXinl-Jk7JIqlhBaxmpTE8UPPrf0DI3BQAEAAcAAA==",
+        "destination_hash": "e3f67cd7b00e4db2f8f00c6a191c04c54d899b55018ce152fda8c85810dd3e20"
+      },
+      "notes": "datagram payload matched exactly; RAW carries no source identity by specification",
       "operation": "datagram_payload_exchange_control_socket",
-      "peer_identity": null,
-      "result": "not_run",
+      "peer_identity": {
+        "destination": "~BPDxiHQI7uwyKS9ttX5yslkESgJgoS0rV2kMzXahNr8E8PGIdAju7DIpL221fnKyWQRKAmChLStXaQzNdqE2vwTw8Yh0CO7sMikvbbV-crJZBEoCYKEtK1dpDM12oTa~BPDxiHQI7uwyKS9ttX5yslkESgJgoS0rV2kMzXahNr8E8PGIdAju7DIpL221fnKyWQRKAmChLStXaQzNdqE2vwTw8Yh0CO7sMikvbbV-crJZBEoCYKEtK1dpDM12oTa~BPDxiHQI7uwyKS9ttX5yslkESgJgoS0rV2kMzXahNr8E8PGIdAju7DIpL221fnKyWQRKAmChLStXaQzNdqE2vwTw8Yh0CO7sMikvbbV-crJZBEoCYKEtK1dpDM12oTa~BPDxiHQI7uwyKS9ttX5yslkESgJgoS0rV2kMzXahNr8E8PGIdAju7DIpL221fnKyWQRKAmChLStXaQzNdqE2uP~K6uC0QnZyAUHXxiFmCPf0aYHcMizA~jX6r5rVy9rBQAEAAcAAA==",
+        "destination_hash": "a1fd372b081c8701ab2f1c8220b0e00432c73adbb9abb1bcf23733abbc22dbc4"
+      },
+      "result": "pass",
       "shared_dialect": null
     },
     {
-      "diagnostic_category": "peer_identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
-        "identity_proven": false
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": true
       },
       "feature": "datagram2",
-      "local_identity": null,
-      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "local_identity": {
+        "destination": "dMlvcY73cVE7GeApywm5QfSS6hv19yHqc8c3BnpP3Qp0yW9xjvdxUTsZ4CnLCblB9JLqG~X3IepzxzcGek~dCnTJb3GO93FROxngKcsJuUH0kuob9fch6nPHNwZ6T90KdMlvcY73cVE7GeApywm5QfSS6hv19yHqc8c3BnpP3Qp0yW9xjvdxUTsZ4CnLCblB9JLqG~X3IepzxzcGek~dCnTJb3GO93FROxngKcsJuUH0kuob9fch6nPHNwZ6T90KdMlvcY73cVE7GeApywm5QfSS6hv19yHqc8c3BnpP3Qp0yW9xjvdxUTsZ4CnLCblB9JLqG~X3IepzxzcGek~dCnTJb3GO93FROxngKcsJuUH0kuob9fch6nPHNwZ6T90KdMlvcY73cVE7GeApywm5QfSS6hv19yHqc8c3BnpP3Qp0yW9xjvdxUTsZ4CnLCblB9JLqG~X3IepzxzcGek~dCmNlOL2nNDfmw8hzttp4IxImxhCW0z5~2Fy7h9x0x2FHBQAEAAcAAA==",
+        "destination_hash": "c588098cf2baca89e850e47c78140920be451d79353fc2d5dab1c8653ed737b0"
+      },
+      "notes": "datagram payload matched exactly",
       "operation": "datagram_payload_exchange_udp_forward",
-      "peer_identity": null,
-      "result": "not_run",
+      "peer_identity": {
+        "destination": "sUXSPIP68u-tZ91tUbS2l~nCBVeBI~TBcKHAgMpaGsexRdI8g~ry761n3W1RtLaX-cIFV4Ej9MFwocCAyloax7FF0jyD-vLvrWfdbVG0tpf5wgVXgSP0wXChwIDKWhrHsUXSPIP68u-tZ91tUbS2l~nCBVeBI~TBcKHAgMpaGsexRdI8g~ry761n3W1RtLaX-cIFV4Ej9MFwocCAyloax7FF0jyD-vLvrWfdbVG0tpf5wgVXgSP0wXChwIDKWhrHsUXSPIP68u-tZ91tUbS2l~nCBVeBI~TBcKHAgMpaGsexRdI8g~ry761n3W1RtLaX-cIFV4Ej9MFwocCAyloax7FF0jyD-vLvrWfdbVG0tpf5wgVXgSP0wXChwIDKWhrHsUXSPIP68u-tZ91tUbS2l~nCBVeBI~TBcKHAgMpaGsexRdI8g~ry761n3W1RtLaX-cIFV4Ej9MFwocCAyloax39LWCQvR4T0vTI9BouN4~kZgJyXe9Do5RbB6u~9Q3T8BQAEAAcAAA==",
+        "destination_hash": "38f3c6be8c77d3a515b0655b9bd787892e60cdbd7ef88297b22fda1aab2364be"
+      },
+      "result": "pass",
       "shared_dialect": null
     },
     {
-      "diagnostic_category": "peer_identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
         "identity_proven": false
       },
       "feature": "datagram3",
-      "local_identity": null,
-      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "local_identity": {
+        "destination": "YWI4RmqoTbce01KiWm4Thf5j5KK30K4UCTaqhTVDCKdhYjhGaqhNtx7TUqJabhOF~mPkorfQrhQJNqqFNUMIp2FiOEZqqE23HtNSolpuE4X-Y-Sit9CuFAk2qoU1QwinYWI4RmqoTbce01KiWm4Thf5j5KK30K4UCTaqhTVDCKdhYjhGaqhNtx7TUqJabhOF~mPkorfQrhQJNqqFNUMIp2FiOEZqqE23HtNSolpuE4X-Y-Sit9CuFAk2qoU1QwinYWI4RmqoTbce01KiWm4Thf5j5KK30K4UCTaqhTVDCKdhYjhGaqhNtx7TUqJabhOF~mPkorfQrhQJNqqFNUMIp2FiOEZqqE23HtNSolpuE4X-Y-Sit9CuFAk2qoU1QwinYWI4RmqoTbce01KiWm4Thf5j5KK30K4UCTaqhTVDCKdhYjhGaqhNtx7TUqJabhOF~mPkorfQrhQJNqqFNUMIp7V3z2FjckxEDlRjAtgZThogRsS03CmQvtjrRctfFRItBQAEAAcAAA==",
+        "destination_hash": "9066d39debae51f012f5196b1495dca3df7fe6ca55a9d25a779f9ea3d78f8b9f"
+      },
+      "notes": "datagram payload matched exactly; source remains an unverified hash by specification",
       "operation": "datagram_payload_exchange_udp_forward",
-      "peer_identity": null,
-      "result": "not_run",
+      "peer_identity": {
+        "destination": "Zrvs5vUsGGK1xC3E3B6k-vCIKaBEiDeQv1V1jWDSFzxmu-zm9SwYYrXELcTcHqT68IgpoESIN5C~VXWNYNIXPGa77Ob1LBhitcQtxNwepPrwiCmgRIg3kL9VdY1g0hc8Zrvs5vUsGGK1xC3E3B6k-vCIKaBEiDeQv1V1jWDSFzxmu-zm9SwYYrXELcTcHqT68IgpoESIN5C~VXWNYNIXPGa77Ob1LBhitcQtxNwepPrwiCmgRIg3kL9VdY1g0hc8Zrvs5vUsGGK1xC3E3B6k-vCIKaBEiDeQv1V1jWDSFzxmu-zm9SwYYrXELcTcHqT68IgpoESIN5C~VXWNYNIXPGa77Ob1LBhitcQtxNwepPrwiCmgRIg3kL9VdY1g0hc8Zrvs5vUsGGK1xC3E3B6k-vCIKaBEiDeQv1V1jWDSFzxmu-zm9SwYYrXELcTcHqT68IgpoESIN5C~VXWNYNIXPOJFNR0IV~Mv66gqPSdGrnKwzQ2WOA2ozvn2stLvSHo9BQAEAAcAAA==",
+        "destination_hash": "1a4a4114ac9ab33c11e034d9f8876680192195b81a6de7b995e311a6f624fe76"
+      },
+      "result": "pass",
       "shared_dialect": null
     },
     {
-      "diagnostic_category": "identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
-        "identity_proven": false
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": true
       },
       "feature": "shared",
-      "local_identity": null,
-      "notes": "PRIMARY shared session could not be created",
-      "operation": "shared_subsession_payload_single_destination",
-      "peer_identity": null,
-      "result": "not_run",
+      "local_identity": {
+        "destination": "AH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5EgB~4pjYgAp6Hm0pS-Y1PRaSqR88VpnaFnzQJ6Q82PkSAH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5EgB~4pjYgAp6Hm0pS-Y1PRaSqR88VpnaFnzQJ6Q82PkSAH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5EgB~4pjYgAp6Hm0pS-Y1PRaSqR88VpnaFnzQJ6Q82PkSAH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5Ejvj~jPqtCVPBXpxAm5u7J2H2CQyEi1R1EigHMh~WixtBQAEAAcAAA==",
+        "destination_hash": "24d52ad84c9533901a043872a2d0a81fd33d089811e64ec2a599a10635bd64c8"
+      },
+      "notes": "shared STREAM child exchanged an exact payload under Destination hash 24d52ad84c9533901a043872a2d0a81fd33d089811e64ec2a599a10635bd64c8 and captured the peer Destination; child removal succeeded; owner teardown invalidated the child",
+      "operation": "shared_subsession_stream_payload_single_destination",
+      "peer_identity": {
+        "destination": "i4BV4zxLH57o9-j3txvGobKs1fjG0wwibLQ9La1UUWyLgFXjPEsfnuj36Pe3G8ahsqzV-MbTDCJstD0trVRRbIuAVeM8Sx-e6Pfo97cbxqGyrNX4xtMMImy0PS2tVFFsi4BV4zxLH57o9-j3txvGobKs1fjG0wwibLQ9La1UUWyLgFXjPEsfnuj36Pe3G8ahsqzV-MbTDCJstD0trVRRbIuAVeM8Sx-e6Pfo97cbxqGyrNX4xtMMImy0PS2tVFFsi4BV4zxLH57o9-j3txvGobKs1fjG0wwibLQ9La1UUWyLgFXjPEsfnuj36Pe3G8ahsqzV-MbTDCJstD0trVRRbIuAVeM8Sx-e6Pfo97cbxqGyrNX4xtMMImy0PS2tVFFsi4BV4zxLH57o9-j3txvGobKs1fjG0wwibLQ9La1UUWyLgFXjPEsfnuj36Pe3G8ahsqzV-MbTDCJstD0trVRRbGQIDGeYMxGmVv6SWBhcvAlm~zio7DTVTVgX~zBdca0gBQAEAAcAAA==",
+        "destination_hash": "9bdded4e2a90f456c4e7108f28f15e4acb4f23397a40b1d165f224537d3db4ad"
+      },
+      "result": "pass",
       "shared_dialect": "PRIMARY"
     },
     {
-      "diagnostic_category": "identity_unavailable",
+      "diagnostic_category": null,
       "evidence": {
-        "bytes_received": 0,
-        "bytes_sent": 0,
-        "exact_payload_match": false,
-        "identity_proven": false
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": true
       },
       "feature": "shared",
-      "local_identity": null,
-      "notes": "MASTER shared session could not be created",
-      "operation": "shared_subsession_payload_single_destination",
-      "peer_identity": null,
-      "result": "not_run",
+      "local_identity": {
+        "destination": "AH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5EgB~4pjYgAp6Hm0pS-Y1PRaSqR88VpnaFnzQJ6Q82PkSAH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5EgB~4pjYgAp6Hm0pS-Y1PRaSqR88VpnaFnzQJ6Q82PkSAH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5EgB~4pjYgAp6Hm0pS-Y1PRaSqR88VpnaFnzQJ6Q82PkSAH~imNiACnoebSlL5jU9FpKpHzxWmdoWfNAnpDzY-RIAf-KY2IAKeh5tKUvmNT0WkqkfPFaZ2hZ80CekPNj5Ejvj~jPqtCVPBXpxAm5u7J2H2CQyEi1R1EigHMh~WixtBQAEAAcAAA==",
+        "destination_hash": "24d52ad84c9533901a043872a2d0a81fd33d089811e64ec2a599a10635bd64c8"
+      },
+      "notes": "shared DATAGRAM child exchanged an exact payload under owner Destination hash 24d52ad84c9533901a043872a2d0a81fd33d089811e64ec2a599a10635bd64c8 and authenticated the peer source; owner teardown invalidated the child",
+      "operation": "shared_subsession_datagram_payload_single_destination",
+      "peer_identity": {
+        "destination": "O3nagnl7QOqLVT2nyBZHVOfWtK3BNxebet-b58AdKqg7edqCeXtA6otVPafIFkdU59a0rcE3F5t635vnwB0qqDt52oJ5e0Dqi1U9p8gWR1Tn1rStwTcXm3rfm-fAHSqoO3nagnl7QOqLVT2nyBZHVOfWtK3BNxebet-b58AdKqg7edqCeXtA6otVPafIFkdU59a0rcE3F5t635vnwB0qqDt52oJ5e0Dqi1U9p8gWR1Tn1rStwTcXm3rfm-fAHSqoO3nagnl7QOqLVT2nyBZHVOfWtK3BNxebet-b58AdKqg7edqCeXtA6otVPafIFkdU59a0rcE3F5t635vnwB0qqDt52oJ5e0Dqi1U9p8gWR1Tn1rStwTcXm3rfm-fAHSqoO3nagnl7QOqLVT2nyBZHVOfWtK3BNxebet-b58AdKqg7edqCeXtA6otVPafIFkdU59a0rcE3F5t635vnwB0qqHmHjMMcUx3a5EAmwKGz0vupkx~FxtuSPtsLIBoDX-3ABQAEAAcAAA==",
+        "destination_hash": "142e17b01d51caeb32ada836078e5cd97f56ec0184db09a0a641d155551a8033"
+      },
+      "result": "pass",
+      "shared_dialect": "PRIMARY"
+    },
+    {
+      "diagnostic_category": null,
+      "evidence": {
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": true
+      },
+      "feature": "shared",
+      "local_identity": {
+        "destination": "hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvYbO63SKPH7ES0vOVY0SND1rv5bXlZcApvw~NJwXTFu9hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvYbO63SKPH7ES0vOVY0SND1rv5bXlZcApvw~NJwXTFu9hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvYbO63SKPH7ES0vOVY0SND1rv5bXlZcApvw~NJwXTFu9hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvVnEeGOwxBC6AB9GVIwYvaSiQn2KxbyB0YXEmCg-YU-IBQAEAAcAAA==",
+        "destination_hash": "7d90c07549199cf245a3c738f714300a314457c76b10434915b107f714532412"
+      },
+      "notes": "shared STREAM child exchanged an exact payload under Destination hash 7d90c07549199cf245a3c738f714300a314457c76b10434915b107f714532412 and captured the peer Destination; child removal succeeded; owner teardown invalidated the child",
+      "operation": "shared_subsession_stream_payload_single_destination",
+      "peer_identity": {
+        "destination": "4jCi-I1IFnyjaTC1F01fyTqGhaLypu6wHM3QFBq3FmfiMKL4jUgWfKNpMLUXTV~JOoaFovKm7rAczdAUGrcWZ-IwoviNSBZ8o2kwtRdNX8k6hoWi8qbusBzN0BQatxZn4jCi-I1IFnyjaTC1F01fyTqGhaLypu6wHM3QFBq3FmfiMKL4jUgWfKNpMLUXTV~JOoaFovKm7rAczdAUGrcWZ-IwoviNSBZ8o2kwtRdNX8k6hoWi8qbusBzN0BQatxZn4jCi-I1IFnyjaTC1F01fyTqGhaLypu6wHM3QFBq3FmfiMKL4jUgWfKNpMLUXTV~JOoaFovKm7rAczdAUGrcWZ-IwoviNSBZ8o2kwtRdNX8k6hoWi8qbusBzN0BQatxZn4jCi-I1IFnyjaTC1F01fyTqGhaLypu6wHM3QFBq3FmfiMKL4jUgWfKNpMLUXTV~JOoaFovKm7rAczdAUGrcWZ29ndUNS4yFZ~jfi~KvlbsxtEpwCieYTnhUMzM6jDHgXBQAEAAcAAA==",
+        "destination_hash": "7a18bc7467c6631aae352879ac4faadbde2a95b44a649b3d9a5caae280bc5d19"
+      },
+      "result": "pass",
+      "shared_dialect": "MASTER"
+    },
+    {
+      "diagnostic_category": null,
+      "evidence": {
+        "bytes_received": 512,
+        "bytes_sent": 512,
+        "exact_payload_match": true,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": true
+      },
+      "feature": "shared",
+      "local_identity": {
+        "destination": "hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvYbO63SKPH7ES0vOVY0SND1rv5bXlZcApvw~NJwXTFu9hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvYbO63SKPH7ES0vOVY0SND1rv5bXlZcApvw~NJwXTFu9hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvYbO63SKPH7ES0vOVY0SND1rv5bXlZcApvw~NJwXTFu9hs7rdIo8fsRLS85VjRI0PWu~lteVlwCm~D80nBdMW72Gzut0ijx-xEtLzlWNEjQ9a7-W15WXAKb8PzScF0xbvVnEeGOwxBC6AB9GVIwYvaSiQn2KxbyB0YXEmCg-YU-IBQAEAAcAAA==",
+        "destination_hash": "7d90c07549199cf245a3c738f714300a314457c76b10434915b107f714532412"
+      },
+      "notes": "shared DATAGRAM child exchanged an exact payload under owner Destination hash 7d90c07549199cf245a3c738f714300a314457c76b10434915b107f714532412 and authenticated the peer source; owner teardown invalidated the child",
+      "operation": "shared_subsession_datagram_payload_single_destination",
+      "peer_identity": {
+        "destination": "JKedMsl1~vX2cgJ7hRsE1n2xdeFpQpxNG~BSoT~yXMwkp50yyXX-9fZyAnuFGwTWfbF14WlCnE0b8FKhP~JczCSnnTLJdf719nICe4UbBNZ9sXXhaUKcTRvwUqE~8lzMJKedMsl1~vX2cgJ7hRsE1n2xdeFpQpxNG~BSoT~yXMwkp50yyXX-9fZyAnuFGwTWfbF14WlCnE0b8FKhP~JczCSnnTLJdf719nICe4UbBNZ9sXXhaUKcTRvwUqE~8lzMJKedMsl1~vX2cgJ7hRsE1n2xdeFpQpxNG~BSoT~yXMwkp50yyXX-9fZyAnuFGwTWfbF14WlCnE0b8FKhP~JczCSnnTLJdf719nICe4UbBNZ9sXXhaUKcTRvwUqE~8lzMJKedMsl1~vX2cgJ7hRsE1n2xdeFpQpxNG~BSoT~yXMwkp50yyXX-9fZyAnuFGwTWfbF14WlCnE0b8FKhP~JczBQXG-coyLBPxLLilIdrzJbGhzsYYvq~khdD5xkBd6GFBQAEAAcAAA==",
+        "destination_hash": "96e82c1bd0d84a9ce7b1cfd88fdb3024ca7b0583c53f8f5a676838fa7d67026e"
+      },
+      "result": "pass",
       "shared_dialect": "MASTER"
     }
   ],
   "schema_version": "1.1",
   "summary": {
-    "capability_passes": 0,
+    "capability_passes": 11,
     "create_only": 0,
     "fail": 0,
-    "not_run": 9,
-    "pass": 0,
+    "not_run": 0,
+    "pass": 11,
     "unsupported": 0
   }
 }
