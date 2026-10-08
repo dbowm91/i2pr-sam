@@ -186,10 +186,15 @@ execution.
 `i2pr` is qualified only through its own SAM bridge on the configured endpoint.
 The harness never claims the router ran from inside this repository.
 
-The manual GitHub Actions workflow runs on a self-hosted runner labeled
-`i2p-interop`. That runner must host the configured routers or be able to route to
-both the primary and peer SAM endpoints. GitHub-hosted loopback is isolated from
-the operator's machine and is not a live qualification topology.
+There is no GitHub live-interoperability workflow: this repository has no registered
+self-hosted Actions runner, and GitHub-hosted loopback cannot reach an operator's routers.
+Run qualification locally or on an operator-provisioned self-hosted host that can reach
+both configured SAM endpoints:
+
+```bash
+python3 scripts/interop/qualify.py --router "Java I2P" \
+  --endpoint 127.0.0.1:7656 --peer-endpoint 127.0.0.1:7657 --plan stream
+```
 
 ## Adding a router
 

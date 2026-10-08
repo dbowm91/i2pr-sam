@@ -70,7 +70,7 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
 - M009 tunnel daemon/config/persistence/management API — depends on M008.
 - M010 CLI/WebUI/sidecar packaging — depends on M009.
 - M011 live router payload qualification — blocked only on suitable two-router provisioning; M012 and M013 are closed.
-- M012 live qualification harness correctness — closed; peer-endpoint flow, advisory UDP semantics, self-hosted workflow topology, regression checks, and Python-artifact hygiene are corrected.
+- M012 live qualification harness correctness — closed; peer-endpoint flow, advisory UDP semantics, deterministic regression checks, and Python-artifact hygiene are corrected. The live Actions workflow was removed because no self-hosted runner is registered.
 - M013 blocking parity and closure truth — closed; its additive record supplies the DATAGRAM/RAW/D2/D3/shared/timeout/runtime parity evidence missing from M006.
 
 ## Active sequence

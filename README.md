@@ -87,18 +87,19 @@ python3 scripts/check-api-snapshot.py --self-test
 python3 scripts/check-conformance-artifact.py --self-test
 ```
 
-Hosted lanes run on Linux stable, Linux MSRV 1.89, macOS, and Windows. Live router
-qualification is a separate manual workflow:
+Hosted CI lanes run on Linux stable, Linux MSRV 1.89, macOS, and Windows. Live router
+qualification runs locally or on an operator-provisioned host:
 
 ```bash
 python3 scripts/interop/udp_egress_probe.py
-python3 scripts/interop/qualify.py --all
+python3 scripts/interop/qualify.py --all --peer-endpoint 127.0.0.1:7657
 ```
 
 The UDP probe is advisory: a reply proves one request/reply path works, while silence is
-`unknown`. Qualification proceeds to the configured SAM bridge regardless. The manual
-workflow requires a self-hosted runner labeled `i2p-interop` with both bridge endpoints
-routable from that host.
+`unknown`. Qualification proceeds to the configured SAM bridge regardless. There is no
+GitHub live-interoperability workflow because this repository has no registered self-hosted
+Actions runner. Run locally or on an operator-provisioned host that can reach both bridge
+endpoints; pass `--peer-endpoint HOST:PORT` for payload exchange.
 
 ## License
 

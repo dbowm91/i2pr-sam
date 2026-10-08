@@ -69,7 +69,9 @@ python3 scripts/interop/qualify.py --all --peer-endpoint 127.0.0.1:7657
 python3 scripts/check-conformance-artifact.py artifacts/interop/<router>-conformance.json
 ```
 
-The GitHub Actions `live-interop` workflow runs the same commands manually.
+Run these commands locally or on an operator-provisioned host that can reach both SAM
+bridges. M012 removed the GitHub live workflow because no self-hosted Actions runner is
+registered and GitHub-hosted loopback cannot reach operator routers.
 
 ## Acceptance criteria
 

@@ -281,9 +281,9 @@ Class: corrective qualification + infrastructure.
 Objective: produce the live multi-router payload matrix that M005 could not run.
 
 Dependency: **M012 harness-correctness closure plus router provisioning**. M012 repaired the
-peer-endpoint path, moved the manual workflow to an explicitly labeled self-hosted topology,
-and made UDP preflight advisory because silence from arbitrary endpoints cannot prove an
-egress restriction.
+peer-endpoint path, removed the unusable live Actions workflow because no self-hosted runner
+is registered, and made UDP preflight advisory because silence from arbitrary endpoints
+cannot prove an egress restriction.
 
 Exit: after M012, Java I2P plus at least one second router pass stream payload in both
 directions with peer-observable identity, datagram families pass with correct trust typing,

@@ -50,11 +50,11 @@ class QualificationHarnessTests(unittest.TestCase):
                 for probe in reversed(probes):
                     probe.stop()
 
-    def test_workflow_targets_provisioned_self_host_and_passes_peer(self) -> None:
-        workflow = (ROOT / ".github/workflows/live-interop.yml").read_text()
-        self.assertIn("runs-on: [self-hosted, linux, x64, i2p-interop]", workflow)
-        self.assertIn('if [ -n "$PEER_ENDPOINT" ]; then', workflow)
-        self.assertIn('--peer-endpoint "$PEER_ENDPOINT"', workflow)
+    def test_live_workflow_is_removed_without_a_registered_self_hosted_runner(self) -> None:
+        self.assertFalse((ROOT / ".github/workflows/live-interop.yml").exists())
+        readme = (ROOT / "scripts/interop/README.md").read_text()
+        self.assertIn("Run qualification locally or on an operator-provisioned self-hosted host", readme)
+        self.assertIn("--peer-endpoint HOST:PORT", readme)
 
     def test_udp_arbitrary_silence_is_advisory_unknown(self) -> None:
         completed = subprocess.CompletedProcess([], 1, '{"reachability":"unknown","reachable":[],"verdict":"unknown"}', "")
