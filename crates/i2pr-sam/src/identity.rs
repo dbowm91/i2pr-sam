@@ -14,12 +14,33 @@ use crate::SamError;
 
 /// Canonical SHA-256 of a base64 Destination's decoded bytes.
 pub fn destination_hash(destination: &Destination) -> Result<DestinationHash, SamError> {
+    // I2P Base64 substitutes '-' and '~' for the standard '+' and '/' characters.
+    // SAM routers return Destinations in that alphabet, so normalize before using the
+    // standard Base64 decoder. Padding remains '=' in both encodings.
+    let standard_base64 = destination.as_str().replace('-', "+").replace('~', "/");
     let bytes = BASE64
-        .decode(destination.as_str())
+        .decode(standard_base64)
         .map_err(|_| SamError::Rejected("Destination is not valid base64".into()))?;
     let mut hasher = Sha256::new();
     hasher.update(&bytes);
     Ok(DestinationHash::new(hasher.finalize().into()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use base64::engine::general_purpose::STANDARD;
+
+    #[test]
+    fn destination_hash_accepts_the_i2p_base64_alphabet() {
+        let standard = STANDARD.encode([0xfb, 0xef, 0xff]);
+        assert_eq!(standard, "++//");
+        let i2p = Destination::new("--~~").unwrap();
+        assert_eq!(
+            destination_hash(&i2p).unwrap(),
+            destination_hash(&Destination::new(standard).unwrap()).unwrap()
+        );
+    }
 }
 
 /// A concrete public Destination together with its canonical hash.

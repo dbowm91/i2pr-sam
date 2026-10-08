@@ -1,0 +1,2 @@
+router,router_version_or_sha,negotiated_sam_version,feature,operation,shared_dialect,result,diagnostic_category,local_destination_hash,notes
+i2pd,d147bb0fd6789c75dc1c4d70c4f79b151a552d53,3.3,stream,stream_payload_bidirectional,not applicable,not_run,router_timeout,8be31f43688c064e8d3dbca827b7548bff7df232cdff9e59b6cc25b016424970,timed out waiting for the STREAM payload exchange

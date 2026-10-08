@@ -192,3 +192,38 @@ artifact and matrix are in
 [`artifacts/interop/m011-2026-10-08/i2pd-retry-pinned-stream/`](../artifacts/interop/m011-2026-10-08/i2pd-retry-pinned-stream/).
 This retry shows the router process was not being held off by another agent; it does not
 provide a live payload pass or close M011.
+
+## 2026-10-08 — same-router timeout and identity diagnosis
+
+The first run's 20-second per-command timeout was shorter than router tunnel construction.
+The official [SAM v3 reference](https://i2p.net/en/docs/api/samv3/) says `SESSION CREATE`
+can take a minute or more while tunnels are built, so it advises against a short timeout.
+The runner's 120-second process timeout did not change the conformance binary's separate
+20-second SAM-command timeout. The harness now exposes `--control-timeout`, defaults it to
+120 seconds throughout, and records the distinction from the overall runner timeout.
+
+With a longer command timeout, both i2pd sessions were created, but the runner reported
+`identity_unavailable`. A direct SAM `NAMING LOOKUP NAME=ME` returned `RESULT=OK` and a
+valid Destination. The actual parsing defect was that i2pd uses I2P Base64 (`-` and `~`)
+where the Rust parser accepted only the standard Base64 alphabet (`+` and `/`). The
+Destination hash parser now normalizes those two alphabet characters before decoding.
+Pinned [i2pd SAM code](https://github.com/PurpleI2P/i2pd/blob/d147bb0fd6789c75dc1c4d70c4f79b151a552d53/libi2pd_client/SAM.cpp)
+implements `NAME=ME` and delays successful session status until the local Destination is
+ready.
+
+After these fixes, a run with `--control-timeout 120` recorded both local and peer
+Destination identities, then timed out waiting for the STREAM payload exchange. The
+schema-valid result is preserved in
+[`artifacts/interop/m011-2026-10-08/i2pd-long-timeout-stream/`](../artifacts/interop/m011-2026-10-08/i2pd-long-timeout-stream/).
+The row remains `not_run`; identity resolution and successful `SESSION CREATE` are not
+payload evidence. The pinned [i2pd `Destination::IsReady()` implementation](https://github.com/PurpleI2P/i2pd/blob/d147bb0fd6789c75dc1c4d70c4f79b151a552d53/libi2pd/Destination.h)
+requires a LeaseSet and outbound tunnels, but does not establish that an inbound tunnel is
+available. The observed peer transport resets/EOFs and the earlier explicit “no peers
+available” inbound-tunnel log are consistent with this isolated router lacking usable
+inbound tunnels. This is a router connectivity/readiness limitation after SAM setup, not
+evidence that a second router or cross-router tunnels are needed, nor evidence of a SAM
+dialect incompatibility.
+
+The artifact validator accepted the new result. M011 remains open: a payload exchange
+through the same router, or the known-service HTTP STREAM operation, must pass before its
+live evidence gate can close.

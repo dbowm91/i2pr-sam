@@ -37,6 +37,12 @@ class QualificationHarnessTests(unittest.TestCase):
         self.assertEqual(argv.count("--service-destination"), 1)
         self.assertEqual(argv[argv.index("--service-destination") + 1], "service.b32.i2p")
 
+    def test_runner_command_forwards_long_sam_session_timeout(self) -> None:
+        argv = qualify.runner_command(
+            router(), "127.0.0.1:7656", "stream", Path("out.json"), control_timeout=120
+        )
+        self.assertEqual(argv[argv.index("--control-timeout") + 1], "120")
+
     def test_peer_endpoint_reaches_run_runner_from_qualify_one(self) -> None:
         artifact = {"schema_version": "1.1", "rows": [{"feature": "stream", "result": "not_run"}], "summary": {}}
         with tempfile.TemporaryDirectory() as artifact_dir:
@@ -52,7 +58,8 @@ class QualificationHarnessTests(unittest.TestCase):
             try:
                 with patch.object(qualify, "run_runner", return_value=(0, __import__("json").dumps(artifact), "", None)) as run:
                     outcome = qualify.qualify_one(router(), args)
-                self.assertEqual(run.call_args.args[-2], "127.0.0.1:7657")
+                self.assertEqual(run.call_args.args[-3], "127.0.0.1:7657")
+                self.assertEqual(run.call_args.args[-1], 120)
                 self.assertTrue(outcome.artifact_valid)
             finally:
                 for probe in reversed(probes):

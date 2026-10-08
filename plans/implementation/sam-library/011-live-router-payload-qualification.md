@@ -2,7 +2,7 @@
 
 Class: corrective qualification + infrastructure.
 
-Status: **active — same-router service HTTP was proven directly; harness now records HTTP and same-router peer payload evidence; live matrix remains open**.
+Status: **active — same-router service HTTP was proven directly; timeout and i2pd identity handling are corrected; live payload matrix remains open because this isolated router did not complete a payload exchange**.
 
 ## Objective
 
@@ -187,3 +187,21 @@ own HTTP server tunnel and does not require cross-router tunnels. The full matri
 requires live payload evidence for each in-scope feature, but it no longer requires an
 external datagram receiver or a second router implementation: datagram and shared rows
 create their receiver/peer SAM sessions through the selected router.
+
+## 2026-10-08 — i2pd timeout and identity follow-up
+
+The first pinned-i2pd retry used a 20-second SAM command timeout, even though its outer
+runner timeout was 120 seconds. The official SAM v3 reference says session creation waits
+for tunnel construction and may take a minute or more. The qualification harness and client
+now default to a 120-second per-command timeout, independently configurable from the
+process timeout. The retry also exposed an identity parsing defect: i2pd's I2P Base64 uses
+`-` and `~`, which the previous standard-only Base64 parser rejected. The hash parser now
+normalizes the alphabet, and a unit test covers that conversion.
+
+With both fixes, pinned i2pd created both same-router sessions and the artifact recorded
+their concrete identities, but the STREAM payload exchange still timed out. The validated
+row remains `not_run`, so M011 is still open. Evidence and the bounded router-readiness
+diagnosis are in `specs/live-router-qualification.md` and
+`artifacts/interop/m011-2026-10-08/i2pd-long-timeout-stream/`. No cross-router tunnel is
+needed for this test topology; a usable inbound tunnel and successful payload exchange are
+still needed for live closure.

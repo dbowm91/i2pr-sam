@@ -84,7 +84,7 @@ fn parse_options() -> Result<Options, String> {
     let mut peer_router_version = None;
     let mut plan = Plan::Full;
     let mut output = None;
-    let mut control_timeout = 20;
+    let mut control_timeout = 120;
     let mut max_payload = 512usize;
     let mut index = 0;
     while index < args.len() {

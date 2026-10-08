@@ -290,6 +290,7 @@ def runner_command(
     output: Path,
     peer_endpoint: str | None = None,
     service_destination: str | None = None,
+    control_timeout: int = 120,
 ) -> list[str]:
     argv = [
         "cargo",
@@ -311,6 +312,8 @@ def runner_command(
         plan,
         "--output",
         str(output),
+        "--control-timeout",
+        str(control_timeout),
     ]
     if peer_endpoint:
         # The peer may use this same router through another SAM connection; it need not
@@ -329,10 +332,13 @@ def run_runner(
     timeout: float,
     peer_endpoint: str | None = None,
     service_destination: str | None = None,
+    control_timeout: int = 120,
 ) -> tuple[int | None, str, str, dict[str, str] | None]:
 
     """Return (exit_code, stdout, stderr, diagnostic); diagnostic is set when the run failed."""
-    argv = runner_command(router, endpoint, plan, output, peer_endpoint, service_destination)
+    argv = runner_command(
+        router, endpoint, plan, output, peer_endpoint, service_destination, control_timeout
+    )
     if shutil.which("cargo") is None:
         return None, "", "", _diag(DIAG_RUNNER_MISSING, "cargo not found on PATH; cannot build sam-conformance", blocking=True)
     try:
@@ -609,6 +615,7 @@ def qualify_one(router: Router, args: argparse.Namespace) -> Outcome:
         runner_exit, stdout, runner_stderr, diag = run_runner(
             router, endpoint, args.plan, artifact_path, args.timeout, args.peer_endpoint,
             getattr(args, "service_destination", None),
+            getattr(args, "control_timeout", 120),
         )
         stdout_log.write_text(stdout, encoding="utf-8")
         stderr_log.write_text(runner_stderr, encoding="utf-8")
@@ -672,6 +679,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-udp-probe", action="store_true", help="skip the advisory UDP egress probe")
     parser.add_argument("--json-summary", default=None, metavar="PATH", help="also write a machine-readable run summary")
     parser.add_argument("--timeout", type=float, default=300.0, help="per-router runner timeout in seconds (default: 300)")
+    parser.add_argument(
+        "--control-timeout",
+        type=int,
+        default=120,
+        help="per-SAM-command timeout in seconds (default: 120; SESSION CREATE may need a minute or longer)",
+    )
     return parser
 
 
@@ -684,6 +697,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if args.timeout <= 0:
         print("interop: --timeout must be positive", file=sys.stderr)
+        return 2
+    if args.control_timeout <= 0:
+        print("interop: --control-timeout must be positive", file=sys.stderr)
         return 2
 
     routers = load_routers(ROUTERS_CONFIG)

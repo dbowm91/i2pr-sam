@@ -97,6 +97,10 @@ python3 scripts/interop/udp_egress_probe.py
 python3 scripts/interop/qualify.py --all --peer-endpoint 127.0.0.1:7657
 ```
 
+The qualification runner's `--control-timeout` defaults to 120 seconds per SAM command.
+`SESSION CREATE` can wait for tunnel construction; this timeout is separate from the
+runner's overall `--timeout`.
+
 The UDP probe is advisory: a reply proves one request/reply path works, while silence is
 `unknown`. Qualification proceeds to the configured SAM bridge regardless. There is no
 GitHub live-interoperability workflow because this repository has no registered self-hosted

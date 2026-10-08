@@ -103,7 +103,9 @@ impl ClientConfig {
             min_version: SamVersion::V3_1,
             max_version: SamVersion::V3_3,
             connect_timeout: Duration::from_secs(10),
-            control_timeout: Duration::from_secs(30),
+            // SAM SESSION CREATE may wait for tunnel construction, which can take a
+            // minute or longer during startup or network congestion.
+            control_timeout: Duration::from_secs(120),
             max_frame_bytes: i2pr_sam_proto::MAX_LINE_BYTES,
             max_datagram_bytes: 32_768,
             max_inbox_datagrams: 64,
