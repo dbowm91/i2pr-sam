@@ -2,7 +2,7 @@
 
 Class: corrective harness invariant.
 
-Status: **ready**.
+Status: **closed**; see `plans/closure/sam-library/014-status.md`.
 
 ## Objective
 

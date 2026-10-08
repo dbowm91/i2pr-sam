@@ -2,7 +2,7 @@
 
 Class: corrective interoperability invariant.
 
-Status: **ready**.
+Status: **closed**; see `plans/closure/sam-library/016-status.md`.
 
 ## Objective
 
@@ -22,7 +22,7 @@ capability verdict from an implementation failure.
 
 - recognize only the exact `Unknown STYLE` message when paired with `I2P_ERROR`;
 - update client capability learning and error classification;
-- add protocol-level and SAM-client regression tests;
+- retain the protocol result-code regression checks and add SAM-client regression coverage;
 - rerun the workspace tests and M011's full i2pd matrix.
 
 Other `I2P_ERROR` replies remain rejected errors. No generic server error is reclassified.

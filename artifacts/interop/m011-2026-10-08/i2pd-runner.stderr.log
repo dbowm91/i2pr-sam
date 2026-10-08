@@ -1,0 +1,5 @@
+   Compiling i2pr-sam-proto v0.1.0 (/home/sugarwookie/projects/i2pr-sam/crates/i2pr-sam-proto)
+   Compiling i2pr-sam v0.1.0 (/home/sugarwookie/projects/i2pr-sam/crates/i2pr-sam)
+    Finished `release` profile [optimized] target(s) in 3.33s
+     Running `target/release/sam-conformance --endpoint '127.0.0.1:19856' --router i2pd --router-version d147bb0fd6789c75dc1c4d70c4f79b151a552d53 --plan full --output /tmp/i2pr-sam-m011-i2pd-final/i2pd-conformance.json --peer-endpoint '127.0.0.1:7656'`
+warning: local identity unresolved: SAM operation is not supported for this session style: I2P_ERROR

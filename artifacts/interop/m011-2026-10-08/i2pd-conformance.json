@@ -1,0 +1,179 @@
+{
+  "capabilities": {
+    "datagram": "unknown",
+    "datagram2": "unknown",
+    "datagram3": "unknown",
+    "datagram_direct": "unknown",
+    "raw": "unknown",
+    "raw_direct": "unknown",
+    "session_identity_lookup": "unknown",
+    "shared_master": "unknown",
+    "shared_primary": "unsupported",
+    "stream": "unknown"
+  },
+  "endpoint": "127.0.0.1:19856",
+  "generated_at": "2026-10-08T03:04:17Z",
+  "local_identity": null,
+  "negotiated_sam_version": "3.3",
+  "peer_endpoint": "127.0.0.1:7656",
+  "peer_router": null,
+  "peer_router_version_or_sha": null,
+  "plan": "full",
+  "router": "i2pd",
+  "router_version_or_sha": "d147bb0fd6789c75dc1c4d70c4f79b151a552d53",
+  "rows": [
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "stream",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "stream_payload_bidirectional",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    },
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "datagram",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "datagram_payload_exchange_udp_forward",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    },
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "datagram",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "datagram_payload_exchange_control_socket",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    },
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "raw",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "datagram_payload_exchange_udp_forward",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    },
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "raw",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "datagram_payload_exchange_control_socket",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    },
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "datagram2",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "datagram_payload_exchange_udp_forward",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    },
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "datagram3",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "datagram_payload_exchange_udp_forward",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    },
+    {
+      "diagnostic_category": "router_rejected_style",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "shared",
+      "local_identity": null,
+      "notes": "PRIMARY shared session could not be created",
+      "operation": "shared_subsession_payload_single_destination",
+      "peer_identity": null,
+      "result": "unsupported",
+      "shared_dialect": "PRIMARY"
+    },
+    {
+      "diagnostic_category": "identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "shared",
+      "local_identity": null,
+      "notes": "MASTER shared session could not be created",
+      "operation": "shared_subsession_payload_single_destination",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": "MASTER"
+    }
+  ],
+  "schema_version": "1.1",
+  "summary": {
+    "capability_passes": 0,
+    "create_only": 0,
+    "fail": 0,
+    "not_run": 8,
+    "pass": 0,
+    "unsupported": 1
+  }
+}

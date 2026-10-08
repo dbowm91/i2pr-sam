@@ -2,7 +2,7 @@
 
 Class: corrective qualification invariant.
 
-Status: **ready**.
+Status: **closed**; see `plans/closure/sam-library/015-status.md`.
 
 ## Objective
 

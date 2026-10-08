@@ -11,13 +11,14 @@ Current status: **pre-1.0 implementation foundation, conditionally closed**. The
 codec, async client, blocking facade, both datagram transports, concrete shared-session
 identity, the conformance runner, the interop harness, and hosted CI are implemented.
 
-The one thing that does **not** exist is live router evidence: no Java I2P, i2pd, or i2pr
-payload row has ever passed. The implementation host has no provisioned router or reachable
-SAM bridge. UDP probe silence at arbitrary endpoints is inconclusive and is no longer used
-to infer an egress policy. Milestones 005
-and 006 are therefore conditionally closed, and milestone 011 carries the live payload
-matrix as the gate for strict closure. See `plans/closure/sam-library/` for exact
-boundaries.
+No Java I2P, i2pd, or i2pr payload row has passed. A 2026-10-08 attempt installed Java I2P
+and the pinned i2pd source build, and both SAM bridges passed the live preflight. Neither
+router could provide the conformance runner a concrete peer Destination or build usable
+cross-router tunnels, so all payload rows remain `not_run` except i2pd's explicitly
+unsupported PRIMARY shared dialect. UDP probe silence at arbitrary endpoints is
+inconclusive and is not used to infer an egress policy. Milestones 005 and 006 therefore
+remain conditionally closed; M011 carries the live payload matrix for strict closure. See
+`plans/closure/sam-library/` and `specs/live-router-qualification.md` for the exact results.
 
 ## Target shape
 

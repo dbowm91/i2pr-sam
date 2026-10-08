@@ -2,7 +2,7 @@
 
 Class: corrective qualification + infrastructure.
 
-Status: **ready on provisioning**; blocked only on a router-enabled host.
+Status: **blocked on usable cross-router tunnels and peer identity resolution**.
 
 ## Objective
 
@@ -33,6 +33,17 @@ advisory; the live runner tests the actual configured router and peer topology.
 Three router pins verified by `git ls-remote` on 2026-10-07 (see
 `specs/references/sam-v3-reference-freeze.md`). Harness artifacts for all three routers are
 `not_run` with `capability_passes=0`; see `specs/live-router-qualification.md`.
+
+On 2026-10-08, after the user authorized router installation, Java I2P and the pinned i2pd
+source build were installed and both SAM bridges passed the corrected HELLO preflight.
+The full matrix reached both routers but no payload row ran: Java I2P produced nine
+`not_run` rows because local/peer identity lookup returned no concrete Destination; i2pd
+produced eight `not_run` rows for the same peer-identity blocker, plus an explicit
+unsupported PRIMARY shared dialect. i2pd's router log also reported that it had no peers
+available for inbound tunnel creation. The UDP probe observed a reply at DNS/53 and left
+high-port reachability unknown. These facts do not establish an egress policy or a router
+payload incompatibility. Artifacts and the exact attempt details are recorded under
+`artifacts/interop/m011-2026-10-08/` and `specs/live-router-qualification.md`.
 
 ## Invariants
 
@@ -101,4 +112,5 @@ versions actually exercised, and the exact revision at which each row passed.
 Run from a host that has provisioned routers or can route to both configured SAM bridges.
 The peer endpoint is passed through to `sam-conformance`. UDP preflight is advisory; a
 known bridge is attempted regardless of arbitrary UDP probe silence. M011 remains blocked
-until suitable multi-router provisioning and the required live payload evidence exist.
+until the routers can form usable cross-router tunnels, resolve concrete peer Destinations,
+and produce the required live payload evidence.

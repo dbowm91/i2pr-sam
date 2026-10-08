@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: active — M005 and M006 retain their historical conditional closures; M012 and M013 are closed; M011 is blocked on suitable live router provisioning.
+Status: active — M005 and M006 retain their historical conditional closures; M012–M016 are closed; M011 is blocked on usable cross-router tunnels and peer identity resolution.
 
 Long-term references:
 
@@ -103,13 +103,14 @@ Implemented today:
   admission, resource accounting, and hosted Linux/MSRV/macOS/Windows CI.
 
 The conditional closures are still material, and after M005/M006 they are material for one
-reason only: **no live Java I2P, i2pd, or i2pr payload row has ever passed.** The
-implementation host has no provisioned router or reachable SAM bridge. An earlier UDP
-probe observed replies only on port 53, but its silence at unrelated endpoints cannot prove
-an egress policy; M012 made that probe advisory. Every protocol claim above is backed by
+reason only: **no live Java I2P, i2pd, or i2pr payload row has passed.** The host now has
+Java I2P and pinned i2pd running with reachable SAM bridges, but neither router supplied a
+concrete peer Destination or usable cross-router tunnels during M011. An earlier UDP probe
+observed replies only on port 53, but its silence at unrelated endpoints cannot prove an
+egress policy; M012 made that probe advisory. Payload claims above remain backed by
 deterministic mock evidence against the pinned specification, not by a live exchange.
 
-M011 carries that residual. Until it runs, strict foundation closure - and therefore M007
+M011 carries that residual. Until it passes, strict foundation closure - and therefore M007
 bindings and M008 adapter - stays out of reach by design.
 
 ## 5. Target architecture
@@ -382,8 +383,10 @@ shared-Destination identity, truthful datagram mode coverage, blocking parity,
 cancellation/contention/resource evidence, semantic API review, guard self-tests, and
 hosted cross-platform/MSRV CI.
 
-M012 corrects the current live-harness readiness defects. M013 corrects the blocking-parity
-evidence gap. M011 may become the sole remaining gate only after those corrections close.
+M012 corrects the live-harness readiness defects. M013 corrects the blocking-parity evidence
+gap. M014–M016 correct additional defects found while running the live matrix. M011 is now
+the sole remaining foundation gate and remains blocked on usable cross-router tunnels and
+peer identity resolution.
 
 Bindings, service-tunnel adapter, tunnel manager, and UI are not required for foundation
 closure and must not begin implementation before the corrective/live chain is complete.
@@ -402,6 +405,9 @@ closure and must not begin implementation before the corrective/live chain is co
 | 008 | proposed | — | — | 011 strict closure + 013 + stable merged i2pr portable-core revision |
 | 009 | proposed | — | — | 008 |
 | 010 | proposed | — | — | 009 |
-| 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | — | suitable two-router provisioning and reachable SAM bridges |
+| 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | — | bridges are reachable; neither router resolves a concrete peer Destination or builds usable cross-router tunnels |
 | 012 | closed | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | `plans/closure/sam-library/012-status.md` | — |
 | 013 | closed | `plans/implementation/sam-library/013-blocking-parity-and-foundation-closure-truth-corrective.md` | `plans/closure/sam-library/013-status.md` | — |
+| 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | `plans/closure/sam-library/014-status.md` | — |
+| 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | `plans/closure/sam-library/015-status.md` | — |
+| 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | `plans/closure/sam-library/016-status.md` | — |

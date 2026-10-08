@@ -27,15 +27,13 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | active live qualification | `plans/subsystems/sam-library-roadmap.md` | M011 blocked on suitable router provisioning | M001 closed; M002–M006 retain historical conditional closure. M012 repaired qualification machinery; M013 supplied the missing blocking parity evidence. M011 is now the sole remaining foundation gate. |
+| SAM library foundation | active live qualification | `plans/subsystems/sam-library-roadmap.md` | M011 blocked on usable cross-router tunnels and peer identity resolution | M001 closed; M002–M006 retain historical conditional closure. M012–M016 are closed. M011 is the sole remaining foundation gate. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | State | Handoff | Dependencies |
 |---|---:|---|---|---|
-| SAM library | 012 | **ready** | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | none |
-| SAM library | 013 | **ready** | `plans/implementation/sam-library/013-blocking-parity-and-foundation-closure-truth-corrective.md` | none; may execute in parallel with 012 |
-
+| — | — | — | — | No dependency-ready implementation plans remain. |
 ## Closed implementation plans
 
 | Subsystem | Milestone | State | Handoff | Blocker |
@@ -48,6 +46,9 @@ Canonical direction:
 | SAM library | 006 | conditionally closed | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | M005 strict closure, i.e. M011 |
 | SAM library | 012 | closed | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | — |
 | SAM library | 013 | closed | `plans/implementation/sam-library/013-blocking-parity-and-foundation-closure-truth-corrective.md` | — |
+| SAM library | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | — |
+| SAM library | 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | — |
+| SAM library | 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | — |
 
 Closure evidence is under `plans/closure/sam-library/`.
 
@@ -55,7 +56,7 @@ Closure evidence is under `plans/closure/sam-library/`.
 
 | Subsystem | Milestone | State | Handoff | Blocker |
 |---|---:|---|---|---|
-| SAM library | 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | Suitable two-router provisioning and reachable SAM bridges |
+| SAM library | 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | Both SAM bridges work, but neither router can resolve a concrete peer Destination or build usable cross-router tunnels on this host |
 
 ## Future roadmap-only work
 
@@ -69,12 +70,15 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
   stable selected revision at implementation time.
 - M009 tunnel daemon/config/persistence/management API — depends on M008.
 - M010 CLI/WebUI/sidecar packaging — depends on M009.
-- M011 live router payload qualification — blocked only on suitable two-router provisioning; M012 and M013 are closed.
+- M011 live router payload qualification — routers and SAM bridges are provisioned, but usable cross-router tunnels and peer identities remain unavailable; M012–M016 are closed.
 - M012 live qualification harness correctness — closed; peer-endpoint flow, advisory UDP semantics, deterministic regression checks, and Python-artifact hygiene are corrected. The live Actions workflow was removed because no self-hosted runner is registered.
 - M013 blocking parity and closure truth — closed; its additive record supplies the DATAGRAM/RAW/D2/D3/shared/timeout/runtime parity evidence missing from M006.
+- M014 SAM bridge preflight greeting — closed; the harness now sends the SAM v3 HELLO grammar accepted by Java I2P and i2pd.
+- M015 conformance DATAGRAM2 dispatch — closed; DATAGRAM2/DATAGRAM3 rows no longer panic the runner.
+- M016 i2pd unknown-style verdict — closed; its explicit unknown-style response is recorded as unsupported.
 
 ## Active sequence
 
-`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed)} -> 011(blocked on live router provisioning) -> strict foundation closure`
+`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(blocked on usable cross-router tunnels and peer identity resolution) -> strict foundation closure`
 
-Bindings and the service-tunnel adapter remain not implementation-ready. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M011 is now the sole remaining foundation gate and is blocked on suitable two-router provisioning.
+Bindings and the service-tunnel adapter remain not implementation-ready. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 is the sole remaining foundation gate and is blocked on usable cross-router tunnels and peer identity resolution.

@@ -1,0 +1,10 @@
+router,router_version_or_sha,negotiated_sam_version,feature,operation,shared_dialect,result,diagnostic_category,local_destination_hash,notes
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,stream,stream_payload_bidirectional,not applicable,not_run,peer_identity_unavailable,,"peer Destination could not be resolved, so no payload exchange was attempted"
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,datagram,datagram_payload_exchange_udp_forward,not applicable,not_run,peer_identity_unavailable,,"peer Destination could not be resolved, so no payload exchange was attempted"
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,datagram,datagram_payload_exchange_control_socket,not applicable,not_run,peer_identity_unavailable,,"peer Destination could not be resolved, so no payload exchange was attempted"
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,raw,datagram_payload_exchange_udp_forward,not applicable,not_run,peer_identity_unavailable,,"peer Destination could not be resolved, so no payload exchange was attempted"
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,raw,datagram_payload_exchange_control_socket,not applicable,not_run,peer_identity_unavailable,,"peer Destination could not be resolved, so no payload exchange was attempted"
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,datagram2,datagram_payload_exchange_udp_forward,not applicable,not_run,peer_identity_unavailable,,"peer Destination could not be resolved, so no payload exchange was attempted"
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,datagram3,datagram_payload_exchange_udp_forward,not applicable,not_run,peer_identity_unavailable,,"peer Destination could not be resolved, so no payload exchange was attempted"
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,shared,shared_subsession_payload_single_destination,PRIMARY,not_run,identity_unavailable,,PRIMARY shared session could not be created
+Java I2P,a629ec7c9c675dd252d005fb881efd92e8e6ba27,3.3,shared,shared_subsession_payload_single_destination,MASTER,not_run,identity_unavailable,,MASTER shared session could not be created
