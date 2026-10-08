@@ -75,7 +75,21 @@ not establish that high UDP is blocked.
 
 The validated artifacts, per-router matrices, combined matrix, and runner logs are in
 [`artifacts/interop/m011-2026-10-08/`](../artifacts/interop/m011-2026-10-08/). The exact
-qualification code revision was `75d1a13f7a2f09aea720c7489ec8d7ac4ab67317`. Both bridges
-were usable, but this host did not provide usable cross-router tunnels or peer identity
-resolution. M011 remains blocked on that environment requirement; no router compatibility
-failure is inferred from these `not_run` rows.
+qualification code revision was `75d1a13f7a2f09aea720c7489ec8d7ac4ab67317`. The full
+matrix did not resolve its transient peer identity, so its `not_run` rows do not indicate
+router incompatibility.
+
+## 2026-10-08 — SAM request to the Java router's own I2P webserver
+
+Following the same-router route, Java I2P's existing `I2P webserver` tunnel was started and
+the repository's `sam-http-get` example sent `GET /` over a SAM STREAM session to the
+tunnel's `.b32.i2p` Destination. The service was hosted by the same router as the SAM
+bridge. SAM name resolution succeeded and the HTTP response was `200 OK` with 1,186 bytes.
+The exact command and output are recorded in
+[`artifacts/interop/m011-2026-10-08/attempt.md`](../artifacts/interop/m011-2026-10-08/attempt.md).
+
+This is live payload evidence through the router's own tunnels and does not require a
+second router. The standalone full-matrix runner still cannot resolve the transient
+identity it uses for its generated peer, so DATAGRAM/RAW/shared rows remain unqualified.
+M011 now continues against one router and a valid service Destination; it is active for
+the remaining feature evidence rather than blocked on cross-router connectivity.

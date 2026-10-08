@@ -2,12 +2,21 @@
 
 Class: corrective qualification + infrastructure.
 
-Status: **blocked on usable cross-router tunnels and peer identity resolution**.
+Status: **active — Java I2P same-router STREAM request/response verified; remaining feature matrix is open**.
 
 ## Objective
 
-Produce the live multi-router payload matrix that milestone 005 could not run, so the
-foundation's conditional closures can be reconciled to a strict post-corrective closure.
+Produce live payload evidence against a real I2P service so milestone 005's missing live
+evidence can be reconciled to a strict post-corrective closure. A service tunnel hosted by
+the tested router is a valid peer for this purpose; a second router implementation is not
+a prerequisite.
+
+## Validation basis amendment — 2026-10-08
+
+The user clarified that two-router evidence is unnecessary when a SAM client can reach a
+valid I2P service on the same router. The successful Java I2P SAM request below demonstrates
+that path. This amended M011 basis supersedes historical multi-router wording in earlier
+roadmap and closure records; those records remain unchanged as history.
 
 Milestone 005 corrected the protocol behaviour and reporting machinery but could not
 execute a single live payload row. The implementation host has no provisioned router or
@@ -45,14 +54,11 @@ high-port reachability unknown. These facts do not establish an egress policy or
 payload incompatibility. Artifacts and the exact attempt details are recorded under
 `artifacts/interop/m011-2026-10-08/` and `specs/live-router-qualification.md`.
 
-A follow-up Java-only probe passed SAM 3.3 negotiation using two independent clients on the
-same SAM endpoint (`127.0.0.1:7656` for both endpoint flags), so cross-router tunnels are
-not required for a narrower same-router semantic check. Java I2P still timed out before
-creating a concrete session Destination; its log reported that the SAM socket closed while
-waiting for tunnels to build. The schema-valid `java-i2p-same-router-stream.json` records
-the `not_run` row. This host therefore lacks tunnel-ready sessions even for the same-router
-path. A same-router pass would be useful evidence but would not meet criterion 2 below,
-which explicitly requires a second router implementation.
+A follow-up Java-only SAM HTTP probe resolved the Java router's active webserver tunnel
+Destination and received `HTTP/1.1 200 OK` with 1,186 response bytes. The reproducible
+`sam-http-get` example and exact output are recorded in
+`artifacts/interop/m011-2026-10-08/attempt.md`. The first same-router attempt had run before
+that service tunnel was active; it is superseded by this successful service-backed request.
 
 ## Invariants
 
@@ -65,8 +71,9 @@ which explicitly requires a second router implementation.
 
 ## In scope
 
-- provisioning two routers able to reach each other over the I2P network;
-- running the full matrix for Java I2P plus at least one second router;
+- provisioning one router with a reachable SAM bridge and an addressable I2P service;
+- running live payload operations through that router, including a STREAM request to a
+  valid I2P HTTP service (which may be hosted by the same router);
 - recording negotiated SAM version, dialect, and payload evidence per row;
 - reconciling the M002-M004 conditional authority additively to strict closure.
 
@@ -97,15 +104,15 @@ GitHub-hosted loopback cannot reach operator routers.
 
 ## Acceptance criteria
 
-1. Java I2P passes stream payload in both directions with a peer-observable Destination
-   captured on non-silent accept.
-2. At least one second router passes the same stream payload row.
-3. D1, D2, D3, and RAW each produce a payload row with the correct trust typing.
-4. Both datagram transports are exercised, or an `unsupported` row names the router verdict.
-5. A MASTER or PRIMARY shared session passes a subsession payload row with one Destination
+1. Java I2P resolves a concrete I2P service Destination through SAM, sends an HTTP request
+   over STREAM, and receives a valid 2xx HTTP response with nonempty payload bytes. The
+   router, SAM version, target address, response status, byte count, and command are recorded.
+2. D1, D2, D3, and RAW each produce a payload row with the correct trust typing.
+3. Both datagram transports are exercised, or an `unsupported` row names the router verdict.
+4. A MASTER or PRIMARY shared session passes a subsession payload row with one Destination
    hash observed by both ends.
-6. Every artifact validates against the schema, and the matrix reports no `fail` row.
-7. The blocker record in `specs/live-router-qualification.md` is replaced by the real
+5. Every conformance artifact validates against the schema, and the matrix reports no `fail` row.
+6. The blocker record in `specs/live-router-qualification.md` is replaced by the real
    evidence, and milestone 005/006 closure records are superseded additively.
 
 ## Stop conditions
@@ -122,9 +129,8 @@ versions actually exercised, and the exact revision at which each row passed.
 
 Run from a host that has provisioned routers or can route to both configured SAM bridges.
 The peer endpoint is passed through to `sam-conformance`. UDP preflight is advisory; a
-known bridge is attempted regardless of arbitrary UDP probe silence. For the narrower
-same-router check, the selected router must first create a SAM session that resolves to a
-concrete Destination and establish usable tunnels so the two test Destinations can exchange
-payload. M011 strict closure additionally requires a second router implementation and its
-peer Destination; the current environment has no usable cross-router path and did not yet
-complete even the Java same-router session setup.
+known bridge is attempted regardless of arbitrary UDP probe silence. The focused
+`sam-http-get` path resolves the service Destination through the SAM bridge and tests a
+real request/response over STREAM. It can use a router's own HTTP server tunnel and does
+not require cross-router tunnels. The full matrix still requires payload evidence for each
+in-scope feature, but it no longer requires a second router implementation.

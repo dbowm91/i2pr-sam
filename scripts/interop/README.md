@@ -50,6 +50,18 @@ python3 scripts/interop/qualify.py --all
 python3 scripts/interop/qualify.py --all --json-summary artifacts/interop/run-summary.json
 ```
 
+For a direct STREAM smoke test against one addressable I2P service, start Java I2P's SAM
+bridge and an HTTP server tunnel, then run:
+
+```bash
+cargo run --locked -p i2pr-sam --example sam-http-get -- <hostname-or-b32.i2p>
+```
+
+The example resolves the supplied address through SAM, creates a STREAM session, sends
+`GET /`, and succeeds only after receiving an HTTP 2xx response. The server tunnel may be
+hosted by the same router; this proves a real SAM request/response path without requiring a
+second router. It is a focused STREAM check and does not replace the full feature matrix.
+
 `qualify.py` flags: `--router LABEL` (repeatable), `--all`, `--endpoint HOST:PORT`,
 `--peer-endpoint HOST:PORT` (second bridge used for peer-observed payload exchange)
 (overrides `routers.json`), `--plan full|stream|datagram|shared`, `--artifact-dir`

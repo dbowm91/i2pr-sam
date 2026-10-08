@@ -51,7 +51,7 @@ An initial Ubuntu i2pd package process (`2.49.0-1build3`) aborted with allocator
 corruption after joining the network. The M011 artifact uses the pinned source build above,
 not that package process.
 
-## 2026-10-08 — Java I2P same-router self-qualification
+## 2026-10-08 — initial Java same-router probe before a service tunnel was active
 
 To avoid attempting a Java-I2P-to-i2pd tunnel, Java I2P was tested with two independent
 SAM clients connected to the same bridge (`127.0.0.1:7656` used for both `--endpoint` and
@@ -71,8 +71,39 @@ with `--control-timeout 120` produced the same outcome.
 For a same-router payload row to pass, Java I2P first needs to establish a SAM session and
 return a concrete Destination, then build usable local inbound/outbound tunnels for the two
 session Destinations so STREAM (or datagram) payload can be exchanged. Both clients may
-connect to the same SAM bridge; a second router is not needed for that narrower semantic
-check. A successful same-router row would still not satisfy M011's separate acceptance
-criterion requiring STREAM exchange with a second router implementation. This environment
-currently satisfies neither path because the Java router did not finish session/tunnel
-setup, and the cross-router path is unavailable by environment constraint.
+connect to the same SAM bridge; a second router is not needed. This initial configuration
+did not finish session/tunnel setup. The follow-up below uses the router's configured
+webserver tunnel as the known peer destination.
+
+## 2026-10-08 — SAM HTTP request to Java I2P's local server tunnel
+
+The existing Java I2P `I2P webserver` tunnel was enabled temporarily. The local server
+endpoint was `127.0.0.1:7658`; its router-reported public address was
+`hqlkjlb3ehnwjd2i64ikghjlmdrz3ws43yc2nehhdilvgwwpxjuq.b32.i2p`. Two router-local
+destinations were not needed: the SAM client resolved that concrete address and opened a
+STREAM session directly to the HTTP service inside the same router.
+
+Reproduction from the repository root:
+
+```text
+cargo run --offline -p i2pr-sam --example sam-http-get -- \
+  hqlkjlb3ehnwjd2i64ikghjlmdrz3ws43yc2nehhdilvgwwpxjuq.b32.i2p
+```
+
+Observed result:
+
+```text
+sam=connected target=hqlkjlb3ehnwjd2i64ikghjlmdrz3ws43yc2nehhdilvgwwpxjuq.b32.i2p
+name_resolution=ok
+session=created identity=false
+response_bytes=1186
+response_header=HTTP/1.1 200 OK
+http_response=valid
+```
+
+The bridge negotiated SAM 3.3 on Java I2P runtime `2.13.0-0-1~ubuntu4`. This is a successful
+live SAM STREAM request and response through Java I2P to a valid
+Destination, hosted by a server tunnel on the same router. The earlier timeout was caused
+by probing before an addressable service tunnel was running; it did not establish that
+same-router SAM requests are unavailable. The router was stopped and the SAM/server-tunnel
+`startOnLoad` settings were restored after the probe.

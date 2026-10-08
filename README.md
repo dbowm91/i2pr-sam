@@ -11,16 +11,15 @@ Current status: **pre-1.0 implementation foundation, conditionally closed**. The
 codec, async client, blocking facade, both datagram transports, concrete shared-session
 identity, the conformance runner, the interop harness, and hosted CI are implemented.
 
-No Java I2P, i2pd, or i2pr payload row has passed. A 2026-10-08 attempt installed Java I2P
-and the pinned i2pd source build, and both SAM bridges passed the live preflight. Neither
-router could provide the conformance runner a concrete peer Destination or build usable
-cross-router tunnels. A Java same-router probe using two clients on one SAM bridge also
-timed out before resolving a Destination, so all payload rows remain `not_run` except
-i2pd's explicitly unsupported PRIMARY shared dialect. UDP probe silence at arbitrary
-endpoints is inconclusive and is not used to infer an egress policy. Milestones 005 and 006
-therefore remain conditionally closed; M011 carries the live payload matrix for strict
-closure. See `plans/closure/sam-library/` and `specs/live-router-qualification.md` for the
-exact results.
+The 2026-10-08 conformance matrix still has no passing rows: it could not resolve its
+transient peer identity, and i2pd explicitly rejected PRIMARY shared style. A separate
+Java I2P SAM STREAM smoke test did resolve a valid local `.b32.i2p` server tunnel, send
+`GET /`, and receive `HTTP/1.1 200 OK` with 1,186 bytes. This proves a real SAM request and
+response through one router; cross-router evidence is not required for that check. The
+broader live feature matrix remains in M011. UDP probe silence at arbitrary endpoints is
+inconclusive and is not used to infer an egress policy. Milestones 005 and 006 remain
+conditionally closed pending the remaining M011 evidence. See `plans/closure/sam-library/`
+and `specs/live-router-qualification.md` for the results.
 
 ## Target shape
 

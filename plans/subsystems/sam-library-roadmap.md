@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: active — M005 and M006 retain their historical conditional closures; M012–M016 are closed; M011 is blocked on usable cross-router tunnels and peer identity resolution.
+Status: active — M005 and M006 retain their historical conditional closures; M012–M016 are closed; M011 has a passing Java SAM HTTP STREAM probe and continues on the remaining feature matrix.
 
 Long-term references:
 
@@ -281,16 +281,18 @@ Future, unplanned implementation handoff.
 
 Class: corrective qualification + infrastructure.
 
-Objective: produce the live multi-router payload matrix that M005 could not run.
+Objective: produce live payload evidence against a real I2P service that M005 could not run.
 
 Dependency: **M012 harness-correctness closure plus router provisioning**. M012 repaired the
 peer-endpoint path, removed the unusable live Actions workflow because no self-hosted runner
 is registered, and made UDP preflight advisory because silence from arbitrary endpoints
 cannot prove an egress restriction.
 
-Exit: after M012, Java I2P plus at least one second router pass stream payload in both
-directions with peer-observable identity, datagram families pass with correct trust typing,
-and a shared subsession payload row proves one Destination across children.
+Exit: after M012, a router SAM client sends an HTTP request over STREAM to a concrete I2P
+service Destination and receives a successful HTTP response. Java I2P's own server tunnel
+may be the service; evidence from a second router is unnecessary. Datagram families still
+need payload evidence with correct trust typing, and a shared subsession row must prove one
+Destination across children.
 
 ### 012 — Live qualification harness correctness corrective
 
@@ -378,15 +380,15 @@ wire dialect, result, and known deviation.
 The initial implementation line 001–004 produced one strict closure and three conditional
 closures. Foundation closure now additionally requires M005 and M006.
 
-Strict foundation closure requires live multi-router payload evidence, concrete
+Strict foundation closure requires live service-backed payload evidence, concrete
 shared-Destination identity, truthful datagram mode coverage, blocking parity,
 cancellation/contention/resource evidence, semantic API review, guard self-tests, and
 hosted cross-platform/MSRV CI.
 
 M012 corrects the live-harness readiness defects. M013 corrects the blocking-parity evidence
 gap. M014–M016 correct additional defects found while running the live matrix. M011 is now
-the sole remaining foundation gate and remains blocked on usable cross-router tunnels and
-peer identity resolution.
+the sole remaining foundation gate. Java SAM HTTP STREAM to a local server tunnel passes;
+DATAGRAM/RAW/shared payload evidence remains.
 
 Bindings, service-tunnel adapter, tunnel manager, and UI are not required for foundation
 closure and must not begin implementation before the corrective/live chain is complete.
@@ -405,7 +407,7 @@ closure and must not begin implementation before the corrective/live chain is co
 | 008 | proposed | — | — | 011 strict closure + 013 + stable merged i2pr portable-core revision |
 | 009 | proposed | — | — | 008 |
 | 010 | proposed | — | — | 009 |
-| 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | — | bridges are reachable; neither router resolves a concrete peer Destination or builds usable cross-router tunnels |
+| 011 | active | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | — | Java SAM HTTP STREAM passes to a local server tunnel; DATAGRAM/RAW/shared payload evidence remains |
 | 012 | closed | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | `plans/closure/sam-library/012-status.md` | — |
 | 013 | closed | `plans/implementation/sam-library/013-blocking-parity-and-foundation-closure-truth-corrective.md` | `plans/closure/sam-library/013-status.md` | — |
 | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | `plans/closure/sam-library/014-status.md` | — |
