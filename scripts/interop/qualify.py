@@ -289,6 +289,7 @@ def runner_command(
     plan: str,
     output: Path,
     peer_endpoint: str | None = None,
+    service_destination: str | None = None,
 ) -> list[str]:
     argv = [
         "cargo",
@@ -312,9 +313,11 @@ def runner_command(
         str(output),
     ]
     if peer_endpoint:
-        # A second bridge is what turns a structural check into a payload exchange: the
-        # runner connects both sides and verifies the exact bytes that cross.
+        # The peer may use this same router through another SAM connection; it need not
+        # belong to a second router implementation.
         argv.extend(["--peer-endpoint", peer_endpoint])
+    if service_destination:
+        argv.extend(["--service-destination", service_destination])
     return argv
 
 
@@ -325,10 +328,11 @@ def run_runner(
     output: Path,
     timeout: float,
     peer_endpoint: str | None = None,
+    service_destination: str | None = None,
 ) -> tuple[int | None, str, str, dict[str, str] | None]:
 
     """Return (exit_code, stdout, stderr, diagnostic); diagnostic is set when the run failed."""
-    argv = runner_command(router, endpoint, plan, output, peer_endpoint)
+    argv = runner_command(router, endpoint, plan, output, peer_endpoint, service_destination)
     if shutil.which("cargo") is None:
         return None, "", "", _diag(DIAG_RUNNER_MISSING, "cargo not found on PATH; cannot build sam-conformance", blocking=True)
     try:
@@ -601,7 +605,8 @@ def qualify_one(router: Router, args: argparse.Namespace) -> Outcome:
         if artifact_path.exists():
             artifact_path.unlink()
         runner_exit, stdout, runner_stderr, diag = run_runner(
-            router, endpoint, args.plan, artifact_path, args.timeout, args.peer_endpoint
+            router, endpoint, args.plan, artifact_path, args.timeout, args.peer_endpoint,
+            getattr(args, "service_destination", None),
         )
         stdout_log.write_text(stdout, encoding="utf-8")
         stderr_log.write_text(runner_stderr, encoding="utf-8")
@@ -652,8 +657,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--peer-endpoint",
         default=None,
-        help="second SAM bridge endpoint used for payload exchange; without it the lane can "
-        "only produce structural results and payload rows stay not_run",
+        help="SAM bridge endpoint used as the generated peer for bidirectional payload rows",
+    )
+    parser.add_argument(
+        "--service-destination",
+        default=None,
+        help="known I2P hostname or .b32.i2p address; STREAM plan sends GET / and validates HTTP 2xx",
     )
     parser.add_argument("--plan", default=None, choices=sorted(PLAN_FEATURES), help="lane plan (default: routers.json default_plan)")
     parser.add_argument("--artifact-dir", default="artifacts/interop", help="directory for artifacts and logs (default: artifacts/interop)")

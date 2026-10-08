@@ -64,6 +64,7 @@ struct Options {
     router: String,
     router_version: String,
     peer_endpoint: Option<SocketAddr>,
+    service_destination: Option<String>,
     peer_router: Option<String>,
     peer_router_version: Option<String>,
     plan: Plan,
@@ -78,6 +79,7 @@ fn parse_options() -> Result<Options, String> {
     let mut router = None;
     let mut router_version = None;
     let mut peer_endpoint = None;
+    let mut service_destination = None;
     let mut peer_router = None;
     let mut peer_router_version = None;
     let mut plan = Plan::Full;
@@ -110,6 +112,7 @@ fn parse_options() -> Result<Options, String> {
                         .map_err(|e| format!("--peer-endpoint: {e}"))?,
                 )
             }
+            "--service-destination" => service_destination = Some(value()?),
             "--peer-router" => peer_router = Some(value()?),
             "--peer-router-version" => peer_router_version = Some(value()?),
             "--plan" => plan = Plan::parse(&value()?)?,
@@ -142,6 +145,7 @@ fn parse_options() -> Result<Options, String> {
         router,
         router_version,
         peer_endpoint,
+        service_destination,
         peer_router,
         peer_router_version,
         plan,
@@ -178,6 +182,8 @@ struct Evidence {
     bytes_received: usize,
     exact_payload_match: bool,
     identity_proven: bool,
+    http_status: Option<u16>,
+    http_body_bytes: Option<usize>,
 }
 
 struct Row {
@@ -491,6 +497,7 @@ async fn stream_row(
         bytes_received: inbound.len() + reply.len(),
         exact_payload_match: exact,
         identity_proven: peer_identity_match,
+        ..Evidence::default()
     };
     let identity_proven = evidence.identity_proven;
     row.evidence = evidence;
@@ -508,6 +515,107 @@ async fn stream_row(
     if !identity_proven {
         row.notes
             .push_str("; peer Destination was not captured on accept");
+    }
+    row
+}
+
+/// Send an HTTP request to a known service Destination through this SAM bridge.
+async fn service_http_row(
+    options: &Options,
+    client: &SamClient,
+    local_identity: Option<&i2pr_sam::SessionIdentity>,
+) -> Row {
+    let target = options
+        .service_destination
+        .as_deref()
+        .expect("selected by caller");
+    let mut row =
+        Row::structural("stream", "stream_http_service_request_response").identity(local_identity);
+    let destination = match client.lookup_destination(target).await {
+        Ok(destination) => destination,
+        Err(error) => return row.failed(&error, "service Destination lookup failed"),
+    };
+    let identity = match i2pr_sam::SessionIdentity::new(destination.clone()) {
+        Ok(identity) => identity,
+        Err(error) => return row.failed(&error, "resolved service identity is invalid"),
+    };
+    row = row.peer(Some(&identity));
+
+    let session = match client
+        .create_stream_session(&SessionDestination::Transient, "cf-service-http", &[])
+        .await
+    {
+        Ok(session) => session,
+        Err(error) => return row.failed(&error, "STREAM session creation failed"),
+    };
+    let mut stream = match session.connect(destination.as_str(), None, None).await {
+        Ok(stream) => stream,
+        Err(error) => {
+            session.close().await;
+            return row.failed(&error, "STREAM connect to service failed");
+        }
+    };
+    let request = format!(
+        "GET / HTTP/1.1\r\nHost: {target}\r\nConnection: close\r\nUser-Agent: i2pr-sam-conformance\r\n\r\n"
+    );
+    if let Err(error) = stream.write_all(request.as_bytes()).await {
+        session.close().await;
+        return row.failed(&SamError::Io(error), "HTTP request write failed");
+    }
+    if let Err(error) = stream.flush().await {
+        session.close().await;
+        return row.failed(&SamError::Io(error), "HTTP request flush failed");
+    }
+    let mut limited = stream.take(1_048_576);
+    let mut response = Vec::new();
+    let read =
+        tokio::time::timeout(options.control_timeout, limited.read_to_end(&mut response)).await;
+    session.close().await;
+    match read {
+        Err(_) => return row.skipped("router_timeout", "timed out waiting for HTTP response"),
+        Ok(Err(error)) => return row.failed(&SamError::Io(error), "HTTP response read failed"),
+        Ok(Ok(_)) => {}
+    }
+
+    let status_line = response
+        .split(|byte| *byte == b'\n')
+        .next()
+        .map(|line| String::from_utf8_lossy(line).trim().to_owned())
+        .unwrap_or_default();
+    let status = status_line
+        .split_whitespace()
+        .nth(1)
+        .and_then(|code| code.parse::<u16>().ok());
+    let body_bytes = response
+        .windows(4)
+        .position(|window| window == b"\r\n\r\n")
+        .map(|end| response.len().saturating_sub(end + 4))
+        .unwrap_or(0);
+    let successful = body_bytes > 0
+        && status.is_some_and(|code| (200..300).contains(&code))
+        && response.starts_with(b"HTTP/1.");
+    row.evidence = Evidence {
+        bytes_sent: request.len(),
+        bytes_received: response.len(),
+        // HTTP responses are validated by status and nonempty payload, not byte equality.
+        exact_payload_match: false,
+        identity_proven: false,
+        http_status: status,
+        http_body_bytes: Some(body_bytes),
+    };
+    row.notes = format!(
+        "target={target}; response_status={}; response_bytes={}; response_body_bytes={}; success requires HTTP 2xx and nonempty body",
+        status
+            .map(|code| code.to_string())
+            .unwrap_or_else(|| "unparsed".into()),
+        response.len(),
+        body_bytes
+    );
+    if successful {
+        row.outcome = Outcome::Pass;
+    } else {
+        row.outcome = Outcome::Fail;
+        row.diagnostic_category = Some("invalid_http_response".into());
     }
     row
 }
@@ -618,6 +726,7 @@ async fn datagram_row(
         bytes_received: inbound.len(),
         exact_payload_match: exact,
         identity_proven: source_known.as_deref() == Some(peer_identity.destination().as_str()),
+        ..Evidence::default()
     };
     if exact {
         row.outcome = Outcome::Pass;
@@ -755,6 +864,7 @@ async fn shared_row(
                 bytes_received: inbound.len(),
                 exact_payload_match: exact,
                 identity_proven: peer_observed.is_some(),
+                ..Evidence::default()
             };
             if exact && row.evidence.identity_proven {
                 row.outcome = Outcome::Pass;
@@ -820,6 +930,8 @@ fn row_json(row: &Row) -> Value {
             "bytes_received": row.evidence.bytes_received,
             "exact_payload_match": row.evidence.exact_payload_match,
             "identity_proven": row.evidence.identity_proven,
+            "http_status": row.evidence.http_status,
+            "http_body_bytes": row.evidence.http_body_bytes,
         },
         "diagnostic_category": row.diagnostic_category,
         "notes": row.notes,
@@ -895,23 +1007,27 @@ async fn run() -> Result<ExitCode, (u8, String)> {
 
     let mut rows: Vec<Value> = Vec::new();
     if options.plan.wants_stream() {
-        let row = match peer_client {
-            Some(peer_client) => {
-                stream_row(
-                    &options,
-                    &client,
-                    peer_client,
-                    local_identity.as_ref(),
-                    peer_identity.as_ref(),
-                )
-                .await
+        let row = if options.service_destination.is_some() {
+            service_http_row(&options, &client, local_identity.as_ref()).await
+        } else {
+            match peer_client {
+                Some(peer_client) => {
+                    stream_row(
+                        &options,
+                        &client,
+                        peer_client,
+                        local_identity.as_ref(),
+                        peer_identity.as_ref(),
+                    )
+                    .await
+                }
+                None => Row::structural("stream", "stream_payload_bidirectional")
+                    .identity(local_identity.as_ref())
+                    .skipped(
+                        "peer_endpoint_unavailable",
+                        "--peer-endpoint is required to exchange payload with a second bridge",
+                    ),
             }
-            None => Row::structural("stream", "stream_payload_bidirectional")
-                .identity(local_identity.as_ref())
-                .skipped(
-                    "peer_endpoint_unavailable",
-                    "--peer-endpoint is required to exchange payload with a second bridge",
-                ),
         };
         rows.push(row_json(&row));
     }

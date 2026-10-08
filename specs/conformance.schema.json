@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/dbowm91/i2pr-sam/specs/conformance.schema.json",
   "title": "SAM conformance artifact",
-  "description": "A conformance artifact records what a client actually did against a named router. A row may only be 'pass' when payload crossed the link and both ends agreed on the exact bytes; 'create_only' records that a session came into existence without payload evidence and must never be counted as a capability pass; 'not_run' records a lane that could not be attempted and must name why.",
+  "description": "A conformance artifact records what a client actually did against a named router. A row may only be 'pass' when its operation-specific payload evidence passes validation; byte-exchange rows require exact agreement, while stream_http_service_request_response requires a nonempty HTTP 2xx response. 'create_only' records session creation without payload evidence and is never a capability pass.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -93,7 +93,9 @@
         "bytes_sent": { "type": "integer", "minimum": 0 },
         "bytes_received": { "type": "integer", "minimum": 0 },
         "exact_payload_match": { "type": "boolean" },
-        "identity_proven": { "type": "boolean" }
+        "identity_proven": { "type": "boolean" },
+        "http_status": { "type": ["integer", "null"], "minimum": 100, "maximum": 599 },
+        "http_body_bytes": { "type": ["integer", "null"], "minimum": 0 }
       }
     },
     "row": {
@@ -135,9 +137,45 @@
               "evidence": {
                 "properties": {
                   "bytes_sent": { "type": "integer", "minimum": 1 },
-                  "bytes_received": { "type": "integer", "minimum": 1 },
-                  "exact_payload_match": { "const": true }
+                  "bytes_received": { "type": "integer", "minimum": 1 }
                 }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": { "const": "pass" },
+              "operation": { "const": "stream_http_service_request_response" }
+            },
+            "required": ["result", "operation"]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "required": ["http_status", "http_body_bytes"],
+                "properties": {
+                  "http_status": { "type": "integer", "minimum": 200, "maximum": 299 },
+                  "http_body_bytes": { "type": "integer", "minimum": 1 },
+                  "exact_payload_match": { "const": false }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": { "const": "pass" },
+              "operation": { "not": { "const": "stream_http_service_request_response" } }
+            },
+            "required": ["result", "operation"]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "properties": { "exact_payload_match": { "const": true } }
               }
             }
           }

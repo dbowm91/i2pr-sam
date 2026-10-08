@@ -62,9 +62,23 @@ The example resolves the supplied address through SAM, creates a STREAM session,
 hosted by the same router; this proves a real SAM request/response path without requiring a
 second router. It is a focused STREAM check and does not replace the full feature matrix.
 
+The same check can be captured as a conformance artifact:
+
+```bash
+python3 scripts/interop/qualify.py --router "Java I2P" \
+  --endpoint 127.0.0.1:7656 --plan stream \
+  --service-destination <hostname-or-b32.i2p>
+```
+
+For `--plan full`, this option targets the STREAM row at the known service. Datagram and
+shared rows still require `--peer-endpoint` with an addressable SAM peer. A web server
+tunnel cannot observe shared child identity or provide the typed datagram receiver those
+rows validate.
+
 `qualify.py` flags: `--router LABEL` (repeatable), `--all`, `--endpoint HOST:PORT`,
-`--peer-endpoint HOST:PORT` (second bridge used for peer-observed payload exchange)
-(overrides `routers.json`), `--plan full|stream|datagram|shared`, `--artifact-dir`
+`--peer-endpoint HOST:PORT` (SAM bridge used as the generated peer for bidirectional
+payload exchange), `--service-destination HOSTNAME|B32` (STREAM sends `GET /` and validates
+a nonempty HTTP 2xx response), `--plan full|stream|datagram|shared`, `--artifact-dir`
 (default `artifacts/interop`), `--matrix-out` (default
 `artifacts/interop/interop-matrix.csv`), `--skip-udp-probe`, `--json-summary PATH`,
 `--timeout` (per-router runner timeout, default 300 s).
@@ -102,7 +116,7 @@ The harness consumes the JSON emitted by the conformance runner:
 ```
 cargo run --locked --release -p i2pr-sam --bin sam-conformance -- \
   --endpoint HOST:PORT --router LABEL --router-version REV \
-  [--plan full|stream|datagram|shared] [--output PATH]
+  [--plan full|stream|datagram|shared] [--service-destination HOSTNAME|B32] [--output PATH]
 ```
 
 Runner exit codes: `0` requested lanes produced no `fail` rows; `1` at least one
@@ -149,7 +163,9 @@ capability pass.
 `qualify.py` shells out to `scripts/check-conformance-artifact.py` for each artifact and
 records its exit status as `artifact_schema_invalid` when non-zero. The validator checks
 the schema and rejects a `pass` row without payload evidence. The built-in minimal
-structural fallback is used only if that script is unavailable.
+structural fallback is used only if that script is unavailable. Byte exchange operations
+require exact payload agreement; `stream_http_service_request_response` instead validates
+a nonempty HTTP 2xx response and records target, status, and response byte count in notes.
 
 ## Diagnostic categories
 

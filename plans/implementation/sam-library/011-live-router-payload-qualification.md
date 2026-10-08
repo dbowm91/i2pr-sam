@@ -2,7 +2,7 @@
 
 Class: corrective qualification + infrastructure.
 
-Status: **active — Java I2P same-router STREAM request/response verified; remaining feature matrix is open**.
+Status: **active — Java same-router HTTP STREAM is live; harness now records a known-service lane; payload matrix remains open**.
 
 ## Objective
 
@@ -69,9 +69,36 @@ harness must accept a known service Destination for payload tests, and DATAGRAM/
 working echo receiver while shared-session validation needs a SAM peer that can observe
 subsession identity. These rows remain open; no cross-router tunnel is required or claimed.
 
+The harness now accepts `--service-destination` for the STREAM row. It resolves the supplied
+I2P hostname or base32 address through SAM, sends `GET /` over a STREAM session, and records
+the target, response status, total bytes, and response-body bytes. It passes only for an HTTP
+2xx response with a nonempty body. Its artifact evidence is operation-specific and does not
+claim byte-for-byte response echo.
+
+## Full closure evidence still required
+
+The single-router amendment removes cross-router tunnels and a second router implementation
+as prerequisites. It does not remove the payload semantics in the M005 corrective. The
+remaining closure work is:
+
+| Evidence | Needed setup | Current status |
+|---|---|---|
+| Java HTTP STREAM request | SAM bridge and reachable HTTP server tunnel; run `qualify.py --plan stream --service-destination ...` | Prior direct probe passed; record a schema-valid artifact using the new lane |
+| D1 and RAW over UDP forwarding and control socket | Addressable I2P datagram receiver that replies to the sender; forwarded mode needs a UDP service tunnel and local echo service | Open; known-service option currently applies to STREAM |
+| D2 and D3 payload/trust semantics | Receiver that exchanges exact payloads using each SAM datagram format; record D2 authenticated and D3 unverified source behavior | Open; no live payload evidence |
+| Shared STREAM and datagram child | Two SAM clients on the same router are sufficient; one creates the shared owner and the other connects to its Destination | Open; current attempt could not resolve generated peer identity |
+| Shared lifecycle | Observe child removal and owner teardown while the same-router SAM peer exercises the child | Open |
+| Router dialect disposition | Try PRIMARY and MASTER; explicit rejection may be `unsupported`, while timeout or missing identity remains `not_run` | i2pd explicitly rejected PRIMARY; MASTER still needs decisive evidence |
+| Artifact and closure reconciliation | Validate artifacts, preserve commands and router/SAM versions, and reconcile M005/M006 additively | Open |
+
+The known-service option makes loopback STREAM evidence reproducible in the main
+conformance artifact. Full foundation closure still needs live datagram receivers and a peer
+SAM client for shared-session observation; neither requires a second router.
+
 ## Invariants
 
-- a `pass` row requires exact payload agreement in both directions;
+- byte-exchange `pass` rows require exact payload agreement; the HTTP service operation
+  requires a nonempty 2xx response;
 - shared-session rows require a concrete Destination hash and per-child identity proof;
 - DATAGRAM3 source remains an unverified hash and RAW carries no source identity;
 - private Destination material never reaches an artifact;
@@ -101,7 +128,10 @@ defect registered as a new corrective plan rather than being softened in this on
 
 ```bash
 python3 scripts/interop/udp_egress_probe.py
-python3 scripts/interop/qualify.py --all --peer-endpoint 127.0.0.1:7657
+python3 scripts/interop/qualify.py --router "Java I2P" --plan stream \
+  --service-destination <hostname-or-b32.i2p>
+python3 scripts/interop/qualify.py --router "Java I2P" --plan full \
+  --peer-endpoint <same-router-peer-endpoint>
 python3 scripts/check-conformance-artifact.py artifacts/interop/<router>-conformance.json
 ```
 
@@ -116,13 +146,18 @@ GitHub-hosted loopback cannot reach operator routers.
 ## Acceptance criteria
 
 1. Java I2P resolves a concrete I2P service Destination through SAM, sends an HTTP request
-   over STREAM, and receives a valid 2xx HTTP response with nonempty payload bytes. The
-   router, SAM version, target address, response status, byte count, and command are recorded.
-2. D1, D2, D3, and RAW each produce a payload row with the correct trust typing.
-3. Both datagram transports are exercised, or an `unsupported` row names the router verdict.
-4. A MASTER or PRIMARY shared session passes a subsession payload row with one Destination
-   hash observed by both ends.
-5. Every conformance artifact validates against the schema, and the matrix reports no `fail` row.
+   over STREAM, and receives a valid 2xx HTTP response with a nonempty body through the
+   harness. The router, SAM version, target, status, byte counts, and command are recorded.
+2. D1, D2, D3, and RAW each produce a live payload row with correct trust typing; D1 and
+   RAW cover both UDP-forwarded and control-socket modes, with explicit router rejection
+   recorded as `unsupported` only when the router says so.
+3. A supported MASTER or PRIMARY shared session passes STREAM and datagram child payload
+   exchanges with one concrete Destination hash observed at both ends; child removal and
+   owner teardown are observed on the same router.
+4. The feature matrix is exercised through one deployed router and SAM bridge. A second
+   router implementation or cross-router tunnel is not required by this amended basis.
+5. Every conformance artifact validates against the schema, and the matrix has no `fail`
+   or unexplained `not_run` row.
 6. The blocker record in `specs/live-router-qualification.md` is replaced by the real
    evidence, and milestone 005/006 closure records are superseded additively.
 
@@ -144,6 +179,6 @@ known bridge is attempted regardless of arbitrary UDP probe silence. The focused
 `sam-http-get` path resolves the service Destination through the SAM bridge and tests a
 real request/response over STREAM. It can use a router's own HTTP server tunnel and does
 not require cross-router tunnels. The full matrix still requires payload evidence for each
-in-scope feature, but it no longer requires a second router implementation. The current
-harness's generated-peer flow cannot use a preconfigured service Destination, so adding a
-known-destination payload lane is the next M011 implementation task.
+in-scope feature, but it no longer requires a second router implementation. The harness's
+known-service lane covers the HTTP STREAM case; datagram and shared rows need the separate
+receiver and SAM-peer configurations recorded above.

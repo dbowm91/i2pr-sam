@@ -96,7 +96,7 @@ Implemented today:
   with per-subsession identity proof;
 - correct non-silent `STREAM ACCEPT` peer-identity framing;
 - mock/fault/lifecycle/cancellation/contention tests;
-- conformance runner whose rows require payload evidence, plus a schema and validator that
+- conformance runner whose rows require operation-appropriate payload evidence, plus a schema and validator that
   reject an overclaiming artifact;
 - router-enabled interop harness with provisioning probes and a per-router matrix;
 - blocking facade parity, typed public API, guard mutation self-tests, process-wide retry

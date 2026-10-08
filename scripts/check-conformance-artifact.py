@@ -231,12 +231,12 @@ def cross_check(artifact: dict[str, Any]) -> list[str]:
             counts[result] += 1
         evidence = row.get("evidence", {})
         if isinstance(evidence, dict):
-            if result != "pass" and (
+            if result in ("unsupported", "not_run", "create_only") and (
                 evidence.get("bytes_sent", 0) or evidence.get("bytes_received", 0)
             ):
                 problems.append(
                     f"row {row.get('operation')!r} reports {result} while carrying payload bytes; "
-                    "only a verified exchange may move payload"
+                    "these outcomes cannot claim an exchange"
                 )
             if result == "pass" and (
                 evidence.get("bytes_sent", 0) < 1 or evidence.get("bytes_received", 0) < 1
@@ -347,6 +347,27 @@ def self_test(schema: dict[str, Any]) -> int:
         print(f"{'PASS' if accepted == should_pass else 'FAIL'}: {label}")
 
     expect("well-formed payload pass is accepted", copy.deepcopy(passing), True)
+
+    service_http = copy.deepcopy(passing)
+    service_http["rows"][0]["operation"] = "stream_http_service_request_response"
+    service_http["rows"][0]["evidence"]["exact_payload_match"] = False
+    service_http["rows"][0]["evidence"]["http_status"] = 200
+    service_http["rows"][0]["evidence"]["http_body_bytes"] = 64
+    expect("HTTP service pass is accepted with status-validated response evidence", service_http, True)
+
+    bad_service_http = copy.deepcopy(service_http)
+    bad_service_http["rows"][0]["evidence"]["http_status"] = 404
+    expect("HTTP service pass with non-2xx status is rejected", bad_service_http, False)
+
+    failed_exchange = copy.deepcopy(passing)
+    failed_exchange["rows"][0]["result"] = "fail"
+    failed_exchange["rows"][0]["evidence"]["exact_payload_match"] = False
+    failed_exchange["rows"][0]["diagnostic_category"] = "payload_mismatch"
+    failed_exchange["summary"] = {
+        "pass": 0, "unsupported": 0, "fail": 1, "not_run": 0, "create_only": 0,
+        "capability_passes": 0,
+    }
+    expect("failed exchange may retain the payload bytes that exposed the defect", failed_exchange, True)
 
     no_bytes = copy.deepcopy(passing)
     no_bytes["rows"][0]["evidence"]["bytes_received"] = 0
