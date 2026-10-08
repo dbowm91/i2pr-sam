@@ -14,11 +14,13 @@ identity, the conformance runner, the interop harness, and hosted CI are impleme
 No Java I2P, i2pd, or i2pr payload row has passed. A 2026-10-08 attempt installed Java I2P
 and the pinned i2pd source build, and both SAM bridges passed the live preflight. Neither
 router could provide the conformance runner a concrete peer Destination or build usable
-cross-router tunnels, so all payload rows remain `not_run` except i2pd's explicitly
-unsupported PRIMARY shared dialect. UDP probe silence at arbitrary endpoints is
-inconclusive and is not used to infer an egress policy. Milestones 005 and 006 therefore
-remain conditionally closed; M011 carries the live payload matrix for strict closure. See
-`plans/closure/sam-library/` and `specs/live-router-qualification.md` for the exact results.
+cross-router tunnels. A Java same-router probe using two clients on one SAM bridge also
+timed out before resolving a Destination, so all payload rows remain `not_run` except
+i2pd's explicitly unsupported PRIMARY shared dialect. UDP probe silence at arbitrary
+endpoints is inconclusive and is not used to infer an egress policy. Milestones 005 and 006
+therefore remain conditionally closed; M011 carries the live payload matrix for strict
+closure. See `plans/closure/sam-library/` and `specs/live-router-qualification.md` for the
+exact results.
 
 ## Target shape
 

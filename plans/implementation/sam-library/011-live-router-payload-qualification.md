@@ -45,6 +45,15 @@ high-port reachability unknown. These facts do not establish an egress policy or
 payload incompatibility. Artifacts and the exact attempt details are recorded under
 `artifacts/interop/m011-2026-10-08/` and `specs/live-router-qualification.md`.
 
+A follow-up Java-only probe passed SAM 3.3 negotiation using two independent clients on the
+same SAM endpoint (`127.0.0.1:7656` for both endpoint flags), so cross-router tunnels are
+not required for a narrower same-router semantic check. Java I2P still timed out before
+creating a concrete session Destination; its log reported that the SAM socket closed while
+waiting for tunnels to build. The schema-valid `java-i2p-same-router-stream.json` records
+the `not_run` row. This host therefore lacks tunnel-ready sessions even for the same-router
+path. A same-router pass would be useful evidence but would not meet criterion 2 below,
+which explicitly requires a second router implementation.
+
 ## Invariants
 
 - a `pass` row requires exact payload agreement in both directions;
@@ -81,8 +90,10 @@ python3 scripts/check-conformance-artifact.py artifacts/interop/<router>-conform
 ```
 
 Run these commands locally or on an operator-provisioned host that can reach both SAM
-bridges. M012 removed the GitHub live workflow because no self-hosted Actions runner is
-registered and GitHub-hosted loopback cannot reach operator routers.
+bridges. A same-router probe may set `--peer-endpoint` equal to `--endpoint`; this tests two
+SAM clients through one router and does not claim cross-router compatibility. M012 removed
+the GitHub live workflow because no self-hosted Actions runner is registered and
+GitHub-hosted loopback cannot reach operator routers.
 
 ## Acceptance criteria
 
@@ -111,6 +122,9 @@ versions actually exercised, and the exact revision at which each row passed.
 
 Run from a host that has provisioned routers or can route to both configured SAM bridges.
 The peer endpoint is passed through to `sam-conformance`. UDP preflight is advisory; a
-known bridge is attempted regardless of arbitrary UDP probe silence. M011 remains blocked
-until the routers can form usable cross-router tunnels, resolve concrete peer Destinations,
-and produce the required live payload evidence.
+known bridge is attempted regardless of arbitrary UDP probe silence. For the narrower
+same-router check, the selected router must first create a SAM session that resolves to a
+concrete Destination and establish usable tunnels so the two test Destinations can exchange
+payload. M011 strict closure additionally requires a second router implementation and its
+peer Destination; the current environment has no usable cross-router path and did not yet
+complete even the Java same-router session setup.

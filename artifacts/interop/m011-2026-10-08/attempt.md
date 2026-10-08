@@ -50,3 +50,29 @@ against the conformance schema and preserve the `not_run` rows as environmental 
 An initial Ubuntu i2pd package process (`2.49.0-1build3`) aborted with allocator heap
 corruption after joining the network. The M011 artifact uses the pinned source build above,
 not that package process.
+
+## 2026-10-08 — Java I2P same-router self-qualification
+
+To avoid attempting a Java-I2P-to-i2pd tunnel, Java I2P was tested with two independent
+SAM clients connected to the same bridge (`127.0.0.1:7656` used for both `--endpoint` and
+`--peer-endpoint`). This topology is supported by the runner and needs no cross-router
+tunnel. The Java SAM bridge was temporarily enabled in its local client configuration for
+this attempt; the original `startOnLoad=false` and 120-second startup delay were restored
+afterward, and the router was stopped.
+
+The bridge passed SAM 3.3 negotiation, but SAM session creation did not yield a concrete
+Destination. The runner reported `SAM operation timed out`; the router log recorded
+`SAM socket closed while waiting for tunnels to build` and an interrupted
+`I2PSessionImpl.connect`. The router console reported `Network: Firewalled`. The resulting
+schema-valid artifact, `java-i2p-same-router-stream.json`, has `local_identity=null` and
+the STREAM row `not_run` (`peer_identity_unavailable`, zero bytes exchanged). A repeat
+with `--control-timeout 120` produced the same outcome.
+
+For a same-router payload row to pass, Java I2P first needs to establish a SAM session and
+return a concrete Destination, then build usable local inbound/outbound tunnels for the two
+session Destinations so STREAM (or datagram) payload can be exchanged. Both clients may
+connect to the same SAM bridge; a second router is not needed for that narrower semantic
+check. A successful same-router row would still not satisfy M011's separate acceptance
+criterion requiring STREAM exchange with a second router implementation. This environment
+currently satisfies neither path because the Java router did not finish session/tunnel
+setup, and the cross-router path is unavailable by environment constraint.

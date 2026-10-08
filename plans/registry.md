@@ -27,7 +27,7 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | active live qualification | `plans/subsystems/sam-library-roadmap.md` | M011 blocked on usable cross-router tunnels and peer identity resolution | M001 closed; M002–M006 retain historical conditional closure. M012–M016 are closed. M011 is the sole remaining foundation gate. |
+| SAM library foundation | active live qualification | `plans/subsystems/sam-library-roadmap.md` | M011 blocked: Java same-router setup timed out before Destination resolution; strict closure also requires a second router | M001 closed; M002–M006 retain historical conditional closure. M012–M016 are closed. M011 is the sole remaining foundation gate. |
 
 ## Dependency-ready implementation plans
 
@@ -56,7 +56,7 @@ Closure evidence is under `plans/closure/sam-library/`.
 
 | Subsystem | Milestone | State | Handoff | Blocker |
 |---|---:|---|---|---|
-| SAM library | 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | Both SAM bridges work, but neither router can resolve a concrete peer Destination or build usable cross-router tunnels on this host |
+| SAM library | 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | Java same-router SAM sessions timed out before Destination resolution; strict closure also needs a second router, and the cross-router path is unavailable here |
 
 ## Future roadmap-only work
 
@@ -70,7 +70,7 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
   stable selected revision at implementation time.
 - M009 tunnel daemon/config/persistence/management API — depends on M008.
 - M010 CLI/WebUI/sidecar packaging — depends on M009.
-- M011 live router payload qualification — routers and SAM bridges are provisioned, but usable cross-router tunnels and peer identities remain unavailable; M012–M016 are closed.
+- M011 live router payload qualification — SAM bridges are provisioned, but Java same-router session creation timed out before peer identity resolution; strict closure also needs a second router, whose cross-router path is unavailable here. M012–M016 are closed.
 - M012 live qualification harness correctness — closed; peer-endpoint flow, advisory UDP semantics, deterministic regression checks, and Python-artifact hygiene are corrected. The live Actions workflow was removed because no self-hosted runner is registered.
 - M013 blocking parity and closure truth — closed; its additive record supplies the DATAGRAM/RAW/D2/D3/shared/timeout/runtime parity evidence missing from M006.
 - M014 SAM bridge preflight greeting — closed; the harness now sends the SAM v3 HELLO grammar accepted by Java I2P and i2pd.
@@ -79,6 +79,6 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
 
 ## Active sequence
 
-`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(blocked on usable cross-router tunnels and peer identity resolution) -> strict foundation closure`
+`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(blocked on tunnel-ready Java sessions and second-router payload evidence) -> strict foundation closure`
 
-Bindings and the service-tunnel adapter remain not implementation-ready. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 is the sole remaining foundation gate and is blocked on usable cross-router tunnels and peer identity resolution.
+Bindings and the service-tunnel adapter remain not implementation-ready. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 is the sole remaining foundation gate: the Java same-router attempt did not create a concrete Destination or tunnel-ready session, and strict closure additionally needs payload evidence from a second router implementation.
