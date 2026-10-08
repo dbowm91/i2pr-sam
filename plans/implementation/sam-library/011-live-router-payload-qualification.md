@@ -60,6 +60,15 @@ Destination and received `HTTP/1.1 200 OK` with 1,186 response bytes. The reprod
 `artifacts/interop/m011-2026-10-08/attempt.md`. The first same-router attempt had run before
 that service tunnel was active; it is superseded by this successful service-backed request.
 
+A subsequent pinned-i2pd same-router attempt configured a temporary UDP echo server tunnel
+and pointed both harness endpoints at the same SAM bridge. The runner still produced no
+payload rows because it requires a transient peer identity before each exchange; the
+separate direct datagram echo probe timed out. The schema-valid artifact and matrix are
+preserved under `artifacts/interop/m011-2026-10-08/`. This narrows the remaining work: the
+harness must accept a known service Destination for payload tests, and DATAGRAM/RAW need a
+working echo receiver while shared-session validation needs a SAM peer that can observe
+subsession identity. These rows remain open; no cross-router tunnel is required or claimed.
+
 ## Invariants
 
 - a `pass` row requires exact payload agreement in both directions;
@@ -96,9 +105,11 @@ python3 scripts/interop/qualify.py --all --peer-endpoint 127.0.0.1:7657
 python3 scripts/check-conformance-artifact.py artifacts/interop/<router>-conformance.json
 ```
 
-Run these commands locally or on an operator-provisioned host that can reach both SAM
-bridges. A same-router probe may set `--peer-endpoint` equal to `--endpoint`; this tests two
-SAM clients through one router and does not claim cross-router compatibility. M012 removed
+Run these commands locally or on an operator-provisioned host that can reach a SAM bridge
+and the configured service. A same-router probe may set `--peer-endpoint` equal to
+`--endpoint`; this tests two SAM clients through one router and does not claim cross-router
+compatibility. The focused HTTP probe directly connects to a known service Destination.
+M012 removed
 the GitHub live workflow because no self-hosted Actions runner is registered and
 GitHub-hosted loopback cannot reach operator routers.
 
@@ -127,10 +138,12 @@ versions actually exercised, and the exact revision at which each row passed.
 
 ## Handoff notes
 
-Run from a host that has provisioned routers or can route to both configured SAM bridges.
-The peer endpoint is passed through to `sam-conformance`. UDP preflight is advisory; a
+Run from a host that has provisioned a router and a reachable SAM bridge/service. The peer
+endpoint is passed through to `sam-conformance`. UDP preflight is advisory; a
 known bridge is attempted regardless of arbitrary UDP probe silence. The focused
 `sam-http-get` path resolves the service Destination through the SAM bridge and tests a
 real request/response over STREAM. It can use a router's own HTTP server tunnel and does
 not require cross-router tunnels. The full matrix still requires payload evidence for each
-in-scope feature, but it no longer requires a second router implementation.
+in-scope feature, but it no longer requires a second router implementation. The current
+harness's generated-peer flow cannot use a preconfigured service Destination, so adding a
+known-destination payload lane is the next M011 implementation task.

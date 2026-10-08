@@ -93,3 +93,14 @@ second router. The standalone full-matrix runner still cannot resolve the transi
 identity it uses for its generated peer, so DATAGRAM/RAW/shared rows remain unqualified.
 M011 now continues against one router and a valid service Destination; it is active for
 the remaining feature evidence rather than blocked on cross-router connectivity.
+
+A follow-up ran pinned i2pd with both harness endpoints set to `127.0.0.1:19856` and a
+temporary local UDP echo server tunnel. The matrix still had zero payload passes: eight
+rows were `not_run` because transient peer identity resolution failed, PRIMARY was explicitly
+`unsupported`, and MASTER timed out. A direct datagram echo probe also timed out. The
+schema-valid artifact and matrix are under
+`artifacts/interop/m011-2026-10-08/i2pd-same-router-udpserver-*`. This confirms the remaining
+runner limitation is its generated-peer setup; a known-destination lane and a functioning
+receive service are needed to qualify DATAGRAM/RAW. Shared-session validation still needs
+an in-router SAM peer that can observe child identity. These outcomes do not indicate a
+cross-router incompatibility.

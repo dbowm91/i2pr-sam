@@ -107,3 +107,35 @@ Destination, hosted by a server tunnel on the same router. The earlier timeout w
 by probing before an addressable service tunnel was running; it did not establish that
 same-router SAM requests are unavailable. The router was stopped and the SAM/server-tunnel
 `startOnLoad` settings were restored after the probe.
+
+## 2026-10-08 — i2pd same-router UDP server follow-up
+
+To check whether the remaining payload lanes could avoid generated peer identities, pinned
+i2pd `2.61.0-739-gd147bb0f` was started with a temporary `udpserver` tunnel forwarding to a
+local UDP echo socket. The server tunnel published
+`kojkphrfqwbsd2xjmdr63rkneblf3fnksmatzzd3v6om6jesq6kq.b32.i2p`. This used one i2pd router;
+no second implementation was involved. The router eventually built some inbound and
+outbound tunnels, but its transport logs continued to report unreachable peers.
+
+The direct SAM datagram echo probe to that service timed out before receiving an echo.
+The full harness was then run against the same endpoint on both sides:
+
+```text
+python3 scripts/interop/qualify.py --router i2pd --endpoint 127.0.0.1:19856 \
+  --peer-endpoint 127.0.0.1:19856 --plan full --skip-udp-probe \
+  --artifact-dir /tmp/m011-i2pd-same-router \
+  --matrix-out /tmp/m011-i2pd-same-router/matrix.csv --timeout 180
+```
+
+It negotiated SAM 3.3 and returned pass=0, unsupported=1, fail=0, not_run=8. The PRIMARY
+shared style was explicitly rejected as unsupported; MASTER timed out. The remaining rows
+were `not_run` because the runner resolves a transient peer identity before trying any
+payload row. The schema-valid JSON and matrix are preserved as
+`i2pd-same-router-udpserver-full.json` and `i2pd-same-router-udpserver-matrix.csv`.
+
+Setting both endpoints to one router is not sufficient for the current runner: it has no
+option to use a provisioned service Destination as the payload target. M011's stream exit
+is satisfied by the Java HTTP request above. To close the remaining matrix without a second
+router, the harness needs a known-destination receive/echo path for DATAGRAM/RAW and an
+in-router SAM peer that can prove shared-session child identity. No router incompatibility
+is inferred from these `not_run` rows.

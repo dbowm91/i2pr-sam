@@ -27,13 +27,13 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | active live qualification | `plans/subsystems/sam-library-roadmap.md` | M011 active: Java SAM HTTP request to its local server tunnel passes; remaining feature matrix is open | M001 closed; M002–M006 retain historical conditional closure. M012–M016 are closed. M011 is the sole remaining foundation gate. |
+| SAM library foundation | active live qualification | `plans/subsystems/sam-library-roadmap.md` | M011 active: Java same-router HTTP STREAM passes; DATAGRAM/RAW and shared payloads still need a known-destination echo/peer lane | M001 closed; M002–M006 retain historical conditional closure. M012–M016 are closed. M011 is the sole remaining foundation gate. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | State | Handoff | Dependencies |
 |---|---:|---|---|---|
-| SAM library | 011 | active | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | M012–M016 closed; Java SAM HTTP STREAM passes; remaining feature matrix is actionable |
+| SAM library | 011 | active | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | M012–M016 closed; Java SAM HTTP STREAM passes; runner still requires transient peer identity for remaining rows |
 ## Closed implementation plans
 
 | Subsystem | Milestone | State | Handoff | Blocker |
@@ -74,4 +74,4 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
 
 `sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(active on single-router DATAGRAM/RAW/shared payload evidence) -> strict foundation closure`
 
-Bindings and the service-tunnel adapter remain not implementation-ready. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 is the sole remaining foundation gate: a Java SAM HTTP request to a same-router server tunnel now passes; the remaining DATAGRAM/RAW/shared evidence is still needed. A second router implementation is not required by the amended M011 validation basis.
+Bindings and the service-tunnel adapter remain not implementation-ready. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 is the sole remaining foundation gate: a Java SAM HTTP request to a same-router server tunnel now passes; same-router i2pd testing confirmed that the current runner still cannot use a provisioned service Destination instead of a generated transient peer. The remaining DATAGRAM/RAW/shared evidence is still needed. A second router implementation is not required by the amended M011 validation basis.
