@@ -364,43 +364,9 @@ async fn negotiate(client: &SamClient) -> Option<SamVersion> {
     client.capabilities().await.negotiated_version
 }
 
-/// Resolve the concrete identity of a session the client controls.
-async fn resolve(
-    client: &SamClient,
-    id: &str,
-) -> Result<Option<i2pr_sam::SessionIdentity>, SamError> {
-    // A shared session is the cheapest way to obtain an identity the router will actually
-    // use for routing, and it must publish a concrete Destination or creation fails.
-    let session = client
-        .create_shared_session(
-            &SessionDestination::Transient,
-            id,
-            SharedDialect::Primary,
-            &[],
-        )
-        .await?;
-    let identity = session.identity().clone();
-    session.close().await;
-    Ok(Some(identity))
-}
-
 /// Stream payload row: one side accepts, the other connects, and both verify exact bytes.
-async fn stream_row(
-    options: &Options,
-    client: &SamClient,
-    peer: &SamClient,
-    local_identity: Option<&i2pr_sam::SessionIdentity>,
-    peer_identity: Option<&i2pr_sam::SessionIdentity>,
-) -> Row {
-    let mut row = Row::structural("stream", "stream_payload_bidirectional")
-        .identity(local_identity)
-        .peer(peer_identity);
-    let Some(peer_identity) = peer_identity else {
-        return row.skipped(
-            "peer_identity_unavailable",
-            "peer Destination could not be resolved, so no payload exchange was attempted",
-        );
-    };
+async fn stream_row(options: &Options, client: &SamClient, peer: &SamClient) -> Row {
+    let mut row = Row::structural("stream", "stream_payload_bidirectional");
     let session = match client
         .create_stream_session(&SessionDestination::Transient, "cf-stream", &[])
         .await
@@ -419,68 +385,99 @@ async fn stream_row(
             return row.failed(&error, "").note("connecting side");
         }
     };
-    let destination = peer_identity.destination().as_str().to_owned();
+    let Some(local_identity) = session.identity() else {
+        session.close().await;
+        peer_session.close().await;
+        return row.skipped(
+            "identity_unavailable",
+            "the accepting session did not expose its concrete Destination",
+        );
+    };
+    let Some(peer_identity) = peer_session.identity() else {
+        session.close().await;
+        peer_session.close().await;
+        return row.skipped(
+            "identity_unavailable",
+            "the connecting session did not expose its concrete Destination",
+        );
+    };
+    row = row.identity(Some(local_identity)).peer(Some(peer_identity));
+    let expected_peer_destination = peer_identity.destination().clone();
+    let destination = local_identity.destination().as_str().to_owned();
 
     let session = Arc::new(session);
     let max_payload = options.max_payload;
-    let accepting = {
+    let mut accepting = {
         let session = Arc::clone(&session);
         tokio::spawn(async move {
             let mut stream = session.accept().await?;
             let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
             let mut received = vec![0; max_payload];
-            let count = stream.read(&mut received).await?;
-            received.truncate(count);
+            stream.read_exact(&mut received).await?;
             let reply = payload(0xA5, max_payload);
             stream.write_all(&reply).await?;
             stream.flush().await?;
             Ok::<_, SamError>((peer, received, reply.len()))
         })
     };
-    let connecting = tokio::spawn(async move {
+    let mut connecting = tokio::spawn(async move {
         let mut stream = peer_session.connect(&destination, None, None).await?;
         let body = payload(0x5A, max_payload);
         stream.write_all(&body).await?;
         stream.flush().await?;
         let mut reply = vec![0; max_payload];
-        let count = stream.read(&mut reply).await?;
-        reply.truncate(count);
+        stream.read_exact(&mut reply).await?;
         Ok::<_, SamError>((body, reply))
     });
 
     let sent = max_payload;
-    let (accepted, connected) = match (accepting.await, connecting.await) {
-        (Ok(Ok(accepted)), Ok(Ok(connected))) => (accepted, connected),
-        (Ok(Ok(_)), Ok(Err(error))) => {
+    let exchange = tokio::time::timeout(options.control_timeout, async {
+        tokio::join!(&mut accepting, &mut connecting)
+    })
+    .await;
+    let (accepted, connected) = match exchange {
+        Err(_) => {
+            accepting.abort();
+            connecting.abort();
             session.close().await;
-            return row
-                .failed(&error, "")
-                .note("the connecting side failed while the accepting side completed");
+            return row.skipped(
+                "router_timeout",
+                "timed out waiting for the STREAM payload exchange",
+            );
         }
-        (Ok(Err(error)), _) => {
-            session.close().await;
-            return row
-                .failed(&error, "")
-                .note("the accepting side failed, so no payload crossed the link");
-        }
-        (Err(join_error), _) => {
-            session.close().await;
-            return row
-                .skipped(
-                    "accepting_side_failed",
-                    format!("accepting side task failed: {join_error}"),
-                )
-                .note("no payload exchange completed");
-        }
-        (Ok(Ok(_)), Err(join_error)) => {
-            session.close().await;
-            return row
-                .skipped(
-                    "connecting_side_failed",
-                    format!("connecting side task failed: {join_error}"),
-                )
-                .note("no payload exchange completed");
-        }
+        Ok((accepting, connecting)) => match (accepting, connecting) {
+            (Ok(Ok(accepted)), Ok(Ok(connected))) => (accepted, connected),
+            (Ok(Ok(_)), Ok(Err(error))) => {
+                session.close().await;
+                return row
+                    .failed(&error, "")
+                    .note("the connecting side failed while the accepting side completed");
+            }
+            (Ok(Err(error)), _) => {
+                session.close().await;
+                return row
+                    .failed(&error, "")
+                    .note("the accepting side failed, so no payload crossed the link");
+            }
+            (Err(join_error), _) => {
+                session.close().await;
+                return row
+                    .skipped(
+                        "accepting_side_failed",
+                        format!("accepting side task failed: {join_error}"),
+                    )
+                    .note("no payload exchange completed");
+            }
+            (Ok(Ok(_)), Err(join_error)) => {
+                session.close().await;
+                return row
+                    .skipped(
+                        "connecting_side_failed",
+                        format!("connecting side task failed: {join_error}"),
+                    )
+                    .note("no payload exchange completed");
+            }
+        },
     };
     session.close().await;
     let (observed_peer, inbound, replied) = accepted;
@@ -490,7 +487,7 @@ async fn stream_row(
     let exact = inbound == inbound_expected && reply == reply_expected;
     let peer_identity_match = observed_peer
         .as_ref()
-        .map(|peer| &peer.destination == peer_identity.destination())
+        .map(|peer| peer.destination == expected_peer_destination)
         .unwrap_or(false);
     let evidence = Evidence {
         bytes_sent: outbound.len() + replied,
@@ -501,12 +498,16 @@ async fn stream_row(
     };
     let identity_proven = evidence.identity_proven;
     row.evidence = evidence;
-    if exact {
+    if exact && identity_proven {
         row.outcome = Outcome::Pass;
         row.notes = format!(
             "both directions exchanged {} bytes; non-silent accept captured the peer Destination",
             sent
         );
+    } else if exact {
+        row.outcome = Outcome::Fail;
+        row.diagnostic_category = Some("identity_not_observed".into());
+        row.notes = "payload matched, but the accepting side did not observe the connecting session Destination".into();
     } else {
         row.outcome = Outcome::Fail;
         row.diagnostic_category = Some("payload_mismatch".into());
@@ -520,17 +521,12 @@ async fn stream_row(
 }
 
 /// Send an HTTP request to a known service Destination through this SAM bridge.
-async fn service_http_row(
-    options: &Options,
-    client: &SamClient,
-    local_identity: Option<&i2pr_sam::SessionIdentity>,
-) -> Row {
+async fn service_http_row(options: &Options, client: &SamClient) -> Row {
     let target = options
         .service_destination
         .as_deref()
         .expect("selected by caller");
-    let mut row =
-        Row::structural("stream", "stream_http_service_request_response").identity(local_identity);
+    let mut row = Row::structural("stream", "stream_http_service_request_response");
     let destination = match client.lookup_destination(target).await {
         Ok(destination) => destination,
         Err(error) => return row.failed(&error, "service Destination lookup failed"),
@@ -548,6 +544,7 @@ async fn service_http_row(
         Ok(session) => session,
         Err(error) => return row.failed(&error, "STREAM session creation failed"),
     };
+    row = row.identity(session.identity());
     let mut stream = match session.connect(destination.as_str(), None, None).await {
         Ok(stream) => stream,
         Err(error) => {
@@ -637,8 +634,6 @@ async fn datagram_row(
     peer: &SamClient,
     style: SessionStyle,
     transport: DatagramTransport,
-    local_identity: Option<&i2pr_sam::SessionIdentity>,
-    peer_identity: Option<&i2pr_sam::SessionIdentity>,
 ) -> Row {
     let mut row = Row::structural(
         datagram_feature(style),
@@ -646,15 +641,7 @@ async fn datagram_row(
             (_, DatagramTransport::UdpForward) => "datagram_payload_exchange_udp_forward",
             (_, DatagramTransport::ControlSocketV1) => "datagram_payload_exchange_control_socket",
         },
-    )
-    .identity(local_identity)
-    .peer(peer_identity);
-    let Some(peer_identity) = peer_identity else {
-        return row.skipped(
-            "peer_identity_unavailable",
-            "peer Destination could not be resolved, so no payload exchange was attempted",
-        );
-    };
+    );
     if !style.supports_control_socket_datagram() && transport == DatagramTransport::ControlSocketV1
     {
         return row.skipped(
@@ -693,7 +680,25 @@ async fn datagram_row(
                 .note("the peer side could not create a matching session");
         }
     };
-    let destination = peer_identity.destination().as_str().to_owned();
+    let Some(local_identity) = session.identity() else {
+        session.close().await;
+        peer_session.close().await;
+        return row.skipped(
+            "identity_unavailable",
+            "the receiving datagram session did not expose its concrete Destination",
+        );
+    };
+    let Some(peer_identity) = peer_session.identity() else {
+        session.close().await;
+        peer_session.close().await;
+        return row.skipped(
+            "identity_unavailable",
+            "the sending datagram session did not expose its concrete Destination",
+        );
+    };
+    row = row.identity(Some(local_identity)).peer(Some(peer_identity));
+    let expected_peer_destination = peer_identity.destination().clone();
+    let destination = local_identity.destination().as_str().to_owned();
     let body = payload(0x3C, options.max_payload);
     if let Err(error) = peer_session.send(&destination, &body, None, None).await {
         session.close().await;
@@ -702,30 +707,55 @@ async fn datagram_row(
             .failed(&error, "")
             .note("peer send failed before delivery");
     }
-    let received = match session.recv().await {
-        Ok(received) => received,
-        Err(error) => {
+    let received = match tokio::time::timeout(options.control_timeout, session.recv()).await {
+        Ok(Ok(received)) => received,
+        Ok(Err(error)) => {
             session.close().await;
             peer_session.close().await;
             return row.failed(&error, "").note("no datagram was delivered");
         }
+        Err(_) => {
+            session.close().await;
+            peer_session.close().await;
+            return row.skipped(
+                "router_timeout",
+                "timed out waiting for the datagram receiver session",
+            );
+        }
     };
     session.close().await;
     peer_session.close().await;
-    let (inbound, source_known) = match &received {
-        ReceivedDatagram::Authenticated(message) => (
+    let (inbound, source_known, trust_shape_matches) = match (style, &received) {
+        (
+            SessionStyle::Datagram | SessionStyle::Datagram2,
+            ReceivedDatagram::Authenticated(message),
+        ) => (
             message.payload.clone(),
             Some(message.source.as_str().to_owned()),
+            true,
         ),
-        ReceivedDatagram::Unverified(message) => (message.payload.clone(), None),
-        ReceivedDatagram::Raw(message) => (message.payload.clone(), None),
+        (SessionStyle::Datagram3, ReceivedDatagram::Unverified(message)) => {
+            (message.payload.clone(), None, true)
+        }
+        (SessionStyle::Raw, ReceivedDatagram::Raw(message)) => {
+            (message.payload.clone(), None, true)
+        }
+        (_, ReceivedDatagram::Authenticated(message)) => (message.payload.clone(), None, false),
+        (_, ReceivedDatagram::Unverified(message)) => (message.payload.clone(), None, false),
+        (_, ReceivedDatagram::Raw(message)) => (message.payload.clone(), None, false),
     };
-    let exact = inbound == body;
+    let identity_proven = source_known.as_deref() == Some(expected_peer_destination.as_str());
+    let source_proven_as_required = match style {
+        SessionStyle::Datagram | SessionStyle::Datagram2 => identity_proven,
+        SessionStyle::Datagram3 | SessionStyle::Raw => !identity_proven,
+        SessionStyle::Stream => false,
+    };
+    let exact = inbound == body && trust_shape_matches && source_proven_as_required;
     row.evidence = Evidence {
         bytes_sent: body.len(),
         bytes_received: inbound.len(),
         exact_payload_match: exact,
-        identity_proven: source_known.as_deref() == Some(peer_identity.destination().as_str()),
+        identity_proven,
         ..Evidence::default()
     };
     if exact {
@@ -741,27 +771,40 @@ async fn datagram_row(
         }
     } else {
         row.outcome = Outcome::Fail;
-        row.diagnostic_category = Some("payload_mismatch".into());
-        row.notes = "datagram payload bytes did not match".into();
+        row.diagnostic_category = Some(if inbound != body {
+            "payload_mismatch".into()
+        } else {
+            "source_trust_mismatch".into()
+        });
+        row.notes = format!(
+            "datagram response failed payload/trust validation for {:?}",
+            style
+        );
     }
     row
 }
 
 /// Shared-session row: create, add subsessions, and prove one Destination links them.
-async fn shared_row(
+async fn shared_rows(
     options: &Options,
     client: &SamClient,
     peer: &SamClient,
     dialect: SharedDialect,
-    local_identity: Option<&i2pr_sam::SessionIdentity>,
-) -> Row {
+) -> Vec<Row> {
     let name = match dialect {
         SharedDialect::Master => "MASTER",
         SharedDialect::Primary => "PRIMARY",
     };
-    let mut row = Row::structural("shared", "shared_subsession_payload_single_destination")
-        .dialect(dialect)
-        .identity(local_identity);
+    let mut stream_row = Row::structural(
+        "shared",
+        "shared_subsession_stream_payload_single_destination",
+    )
+    .dialect(dialect);
+    let mut datagram_row = Row::structural(
+        "shared",
+        "shared_subsession_datagram_payload_single_destination",
+    )
+    .dialect(dialect);
     let session = match client
         .create_shared_session(
             &SessionDestination::Transient,
@@ -773,13 +816,19 @@ async fn shared_row(
     {
         Ok(session) => session,
         Err(error) => {
-            return row
-                .failed(&error, "")
-                .note(format!("{name} shared session could not be created"));
+            return vec![
+                stream_row
+                    .failed(&error, "")
+                    .note(format!("{name} shared session could not be created")),
+                datagram_row
+                    .failed(&error, "")
+                    .note(format!("{name} shared session could not be created")),
+            ];
         }
     };
     let identity = session.identity().clone();
-    row = row.identity(Some(&identity));
+    stream_row = stream_row.identity(Some(&identity));
+    datagram_row = datagram_row.identity(Some(&identity));
     let datagram_child = match session
         .add_child("cf-shared-dgram", SessionStyle::Datagram, &[])
         .await
@@ -787,7 +836,14 @@ async fn shared_row(
         Ok(child) => child,
         Err(error) => {
             session.close().await;
-            return row.failed(&error, "").note("subsession could not be added");
+            return vec![
+                stream_row
+                    .failed(&error, "")
+                    .note("datagram subsession could not be added"),
+                datagram_row
+                    .failed(&error, "")
+                    .note("datagram subsession could not be added"),
+            ];
         }
     };
     let stream_child = match session
@@ -797,117 +853,261 @@ async fn shared_row(
         Ok(child) => child,
         Err(error) => {
             session.close().await;
-            return row
-                .failed(&error, "")
-                .note("stream subsession could not be added");
+            datagram_child.close().await;
+            return vec![
+                stream_row
+                    .failed(&error, "")
+                    .note("stream subsession could not be added"),
+                datagram_row
+                    .failed(&error, "")
+                    .note("stream subsession could not be added"),
+            ];
         }
     };
     // Every child must report the owner's concrete identity; the request token TRANSIENT
     // is never an acceptable answer.
-    let datagram_child = Arc::new(datagram_child);
     let same_identity =
         datagram_child.identity() == &identity && stream_child.identity() == &identity;
     if !same_identity {
         session.close().await;
-        row.outcome = Outcome::Fail;
-        row.diagnostic_category = Some("identity_divergence".into());
-        row.notes = "subsessions did not report the owner's concrete Destination".into();
-        return row;
+        datagram_child.close().await;
+        stream_child.close().await;
+        stream_row.outcome = Outcome::Fail;
+        stream_row.diagnostic_category = Some("identity_divergence".into());
+        stream_row.notes = "subsessions did not report the owner's concrete Destination".into();
+        datagram_row.outcome = Outcome::Fail;
+        datagram_row.diagnostic_category = Some("identity_divergence".into());
+        datagram_row.notes = "subsessions did not report the owner's concrete Destination".into();
+        return vec![stream_row, datagram_row];
     }
-    if peer.capabilities().await.negotiated_version.is_none() {
-        session.close().await;
-        return row
-            .created_only(format!(
-                "{name} shared session and subsessions established with a concrete Destination; \
-                 peer-observable payload exchange needs --peer-endpoint"
-            ))
-            .note("single Destination hash: ".to_owned() + &identity.hash().to_string());
-    }
-    let peer_session = match peer
+
+    let stream_child = Arc::new(stream_child);
+    let stream_peer = match peer
         .create_stream_session(&SessionDestination::Transient, "cf-shared-peer", &[])
         .await
     {
-        Ok(session) => session,
+        Ok(session) => Some(session),
         Err(error) => {
-            session.close().await;
-            return row
+            stream_row = stream_row
                 .failed(&error, "")
-                .note("peer session could not be created");
+                .note("peer stream session could not be created");
+            None
         }
     };
-    let destination = identity.destination().as_str().to_owned();
-    let max_payload = options.max_payload;
-    let receiving = {
-        let child = Arc::clone(&datagram_child);
-        tokio::spawn(async move {
-            let mut stream = child.accept().await?;
-            let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
-            let mut body = vec![0; max_payload];
-            let count = stream.read(&mut body).await?;
-            body.truncate(count);
-            Ok::<_, SamError>((peer, body))
-        })
-    };
-    let sending = tokio::spawn(async move {
-        let mut stream = peer_session.connect(&destination, None, None).await?;
-        let body = payload(0x6B, max_payload);
-        stream.write_all(&body).await?;
-        stream.flush().await?;
-        Ok::<_, SamError>(body)
-    });
-    match (receiving.await, sending.await) {
-        (Ok(Ok((peer_observed, inbound))), Ok(Ok(outbound))) => {
-            let expected = payload(0x6B, max_payload);
-            let exact = inbound == expected && outbound == expected;
-            row.evidence = Evidence {
-                bytes_sent: outbound.len(),
-                bytes_received: inbound.len(),
-                exact_payload_match: exact,
-                identity_proven: peer_observed.is_some(),
-                ..Evidence::default()
+    if let Some(peer_session) = stream_peer {
+        if let Some(peer_identity) = peer_session.identity() {
+            stream_row = stream_row.peer(Some(peer_identity));
+            let expected_peer_destination = peer_identity.destination().clone();
+            let destination = identity.destination().as_str().to_owned();
+            let max_payload = options.max_payload;
+            let mut receiving = {
+                let child = Arc::clone(&stream_child);
+                tokio::spawn(async move {
+                    let mut stream = child.accept().await?;
+                    let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
+                    let mut body = vec![0; max_payload];
+                    stream.read_exact(&mut body).await?;
+                    Ok::<_, SamError>((peer, body))
+                })
             };
-            if exact && row.evidence.identity_proven {
-                row.outcome = Outcome::Pass;
-                row.notes = format!(
-                    "subsession carried an exact payload under Destination hash {} and the \
-                     accepting side captured the peer Destination",
-                    identity.hash()
-                );
-            } else {
-                row.outcome = Outcome::Fail;
-                row.diagnostic_category = Some(if exact {
-                    "identity_not_observed".into()
-                } else {
-                    "payload_mismatch".to_owned()
-                });
-                row.notes = "shared subsession exchange did not produce verifiable evidence".into();
+            let mut sending = tokio::spawn(async move {
+                let mut stream = peer_session.connect(&destination, None, None).await?;
+                let body = payload(0x6B, max_payload);
+                stream.write_all(&body).await?;
+                stream.flush().await?;
+                Ok::<_, SamError>(body)
+            });
+            let exchange = tokio::time::timeout(options.control_timeout, async {
+                tokio::join!(&mut receiving, &mut sending)
+            })
+            .await;
+            match exchange {
+                Err(_) => {
+                    receiving.abort();
+                    sending.abort();
+                    stream_row = stream_row.skipped(
+                        "router_timeout",
+                        "timed out waiting for the shared STREAM payload exchange",
+                    );
+                }
+                Ok((receiving_result, sending_result)) => {
+                    match (receiving_result, sending_result) {
+                        (Ok(Ok((peer_observed, inbound))), Ok(Ok(outbound))) => {
+                            let expected = payload(0x6B, max_payload);
+                            let exact = inbound == expected && outbound == expected;
+                            let identity_proven = peer_observed.as_ref().is_some_and(|observed| {
+                                observed.destination == expected_peer_destination
+                            });
+                            stream_row.evidence = Evidence {
+                                bytes_sent: outbound.len(),
+                                bytes_received: inbound.len(),
+                                exact_payload_match: exact,
+                                identity_proven,
+                                ..Evidence::default()
+                            };
+                            if exact && identity_proven {
+                                stream_row.outcome = Outcome::Pass;
+                                stream_row.notes = format!(
+                                    "shared STREAM child exchanged an exact payload under Destination hash {} and captured the peer Destination",
+                                    identity.hash()
+                                );
+                            } else {
+                                stream_row.outcome = Outcome::Fail;
+                                stream_row.diagnostic_category = Some(if exact {
+                                    "identity_not_observed".into()
+                                } else {
+                                    "payload_mismatch".into()
+                                });
+                                stream_row.notes = "shared STREAM child did not produce verifiable payload and identity evidence".into();
+                            }
+                        }
+                        (Ok(Err(error)), _) | (_, Ok(Err(error))) => {
+                            stream_row = stream_row
+                                .failed(&error, "shared STREAM exchange did not complete");
+                        }
+                        (Err(error), _) | (_, Err(error)) => {
+                            stream_row = stream_row.skipped(
+                                "subsession_task_failed",
+                                format!("shared STREAM task failed: {error}"),
+                            );
+                        }
+                    }
+                }
             }
+        } else {
+            stream_row = stream_row.skipped(
+                "identity_unavailable",
+                "the connecting shared STREAM session did not expose its Destination",
+            );
         }
-        (Ok(Err(error)), _) => {
-            row.outcome = Outcome::NotRun;
-            row.diagnostic_category = Some(classify_diagnostic(&error).into());
-            row.notes = format!("subsession receive failed: {error}");
-        }
-        (Ok(Ok(_)), Ok(Err(error))) => {
-            row.outcome = Outcome::NotRun;
-            row.diagnostic_category = Some(classify_diagnostic(&error).into());
-            row.notes = format!("peer connect to the shared Destination failed: {error}");
-        }
-        (Err(join_error), _) => {
-            row.outcome = Outcome::NotRun;
-            row.diagnostic_category = Some("subsession_task_failed".into());
-            row.notes = format!("subsession receive task failed: {join_error}");
-        }
-        (Ok(Ok(_)), Err(join_error)) => {
-            row.outcome = Outcome::NotRun;
-            row.diagnostic_category = Some("subsession_task_failed".into());
-            row.notes = format!("peer connect task failed: {join_error}");
+    }
+
+    let datagram_child = Arc::new(datagram_child);
+    let peer_datagram = match peer
+        .create_datagram_session_with(
+            &SessionDestination::Transient,
+            "cf-shared-dgram-peer",
+            SessionStyle::Datagram,
+            DatagramTransport::UdpForward,
+            &[],
+        )
+        .await
+    {
+        Ok(peer_session) => Some(peer_session),
+        Err(error) => {
+            datagram_row = datagram_row
+                .failed(&error, "")
+                .note("peer datagram session could not be created");
+            None
         }
     };
-    datagram_child.close().await;
+    if let Some(peer_session) = peer_datagram {
+        if let Some(peer_identity) = peer_session.identity() {
+            datagram_row = datagram_row.peer(Some(peer_identity));
+            let expected_peer_destination = peer_identity.destination().as_str().to_owned();
+            let destination = identity.destination().as_str().to_owned();
+            let body = payload(0x7C, options.max_payload);
+            let receive = {
+                let child = Arc::clone(&datagram_child);
+                tokio::spawn(async move { child.recv_datagram().await })
+            };
+            if let Err(error) = peer_session.send(&destination, &body, None, None).await {
+                datagram_row = datagram_row
+                    .failed(&error, "shared datagram send failed")
+                    .note("peer datagram send failed before the shared child received a payload");
+            } else {
+                match tokio::time::timeout(options.control_timeout, receive).await {
+                    Ok(Ok(Ok(ReceivedDatagram::Authenticated(message)))) => {
+                        let exact = message.payload == body;
+                        let identity_proven = message.source.as_str() == expected_peer_destination;
+                        datagram_row.evidence = Evidence {
+                            bytes_sent: body.len(),
+                            bytes_received: message.payload.len(),
+                            exact_payload_match: exact,
+                            identity_proven,
+                            ..Evidence::default()
+                        };
+                        if exact && identity_proven {
+                            datagram_row.outcome = Outcome::Pass;
+                            datagram_row.notes = format!(
+                                "shared DATAGRAM child exchanged an exact payload under owner Destination hash {} and authenticated the peer source",
+                                identity.hash()
+                            );
+                        } else {
+                            datagram_row.outcome = Outcome::Fail;
+                            datagram_row.diagnostic_category = Some(if exact {
+                                "identity_not_observed".into()
+                            } else {
+                                "payload_mismatch".into()
+                            });
+                            datagram_row.notes = "shared DATAGRAM child did not produce exact payload and authenticated source evidence".into();
+                        }
+                    }
+                    Ok(Ok(Ok(_))) => {
+                        datagram_row.outcome = Outcome::Fail;
+                        datagram_row.diagnostic_category = Some("source_trust_mismatch".into());
+                        datagram_row.notes =
+                            "shared DATAGRAM child returned the wrong source type".into();
+                    }
+                    Ok(Ok(Err(error))) => {
+                        datagram_row =
+                            datagram_row.failed(&error, "shared DATAGRAM receive failed");
+                    }
+                    Ok(Err(error)) => {
+                        datagram_row = datagram_row.skipped(
+                            "subsession_task_failed",
+                            format!("shared DATAGRAM task failed: {error}"),
+                        );
+                    }
+                    Err(_) => {
+                        datagram_row = datagram_row.skipped(
+                            "router_timeout",
+                            "timed out waiting for the shared DATAGRAM child response",
+                        );
+                    }
+                }
+            }
+            peer_session.close().await;
+        } else {
+            peer_session.close().await;
+            datagram_row = datagram_row.skipped(
+                "identity_unavailable",
+                "the sending shared DATAGRAM session did not expose its Destination",
+            );
+        }
+    }
+    if let Err(error) = session.remove_child("cf-shared-stream").await {
+        stream_row.outcome = Outcome::Fail;
+        stream_row.diagnostic_category = Some("child_removal_failed".into());
+        stream_row.notes = format!("shared STREAM child removal failed: {error}");
+    } else if stream_child.is_open() {
+        stream_row.outcome = Outcome::Fail;
+        stream_row.diagnostic_category = Some("child_removal_not_observed".into());
+        stream_row.notes = "shared STREAM child remained open after removal".into();
+    } else if stream_row.outcome == Outcome::Pass {
+        stream_row.notes.push_str("; child removal succeeded");
+    }
     stream_child.close().await;
     session.close().await;
-    row
+    if stream_child.is_open() {
+        stream_row.outcome = Outcome::Fail;
+        stream_row.diagnostic_category = Some("owner_teardown_not_observed".into());
+        stream_row.notes = "shared STREAM child remained open after owner teardown".into();
+    } else if stream_row.outcome == Outcome::Pass {
+        stream_row
+            .notes
+            .push_str("; owner teardown invalidated the child");
+    }
+    if datagram_child.is_open() {
+        datagram_row.outcome = Outcome::Fail;
+        datagram_row.diagnostic_category = Some("owner_teardown_not_observed".into());
+        datagram_row.notes = "shared DATAGRAM child remained open after owner teardown".into();
+    } else if datagram_row.outcome == Outcome::Pass {
+        datagram_row
+            .notes
+            .push_str("; owner teardown invalidated the child");
+    }
+    vec![stream_row, datagram_row]
 }
 
 fn identity_json(identity: Option<&(String, String)>) -> Value {
@@ -975,13 +1175,6 @@ async fn run() -> Result<ExitCode, (u8, String)> {
         )
     })?;
 
-    let local_identity = match resolve(&client, "cf-identity").await {
-        Ok(identity) => identity,
-        Err(error) => {
-            eprintln!("warning: local identity unresolved: {error}");
-            None
-        }
-    };
     let negotiated = negotiate(&client).await;
 
     let peer = match options.peer_endpoint {
@@ -996,36 +1189,19 @@ async fn run() -> Result<ExitCode, (u8, String)> {
         }
         None => None,
     };
-    let peer_identity = match &peer {
-        Some((peer_client, _)) => resolve(peer_client, "cf-identity-peer")
-            .await
-            .ok()
-            .flatten(),
-        None => None,
-    };
     let peer_client = peer.as_ref().map(|(peer_client, _)| peer_client);
 
     let mut rows: Vec<Value> = Vec::new();
     if options.plan.wants_stream() {
         let row = if options.service_destination.is_some() {
-            service_http_row(&options, &client, local_identity.as_ref()).await
+            service_http_row(&options, &client).await
         } else {
             match peer_client {
-                Some(peer_client) => {
-                    stream_row(
-                        &options,
-                        &client,
-                        peer_client,
-                        local_identity.as_ref(),
-                        peer_identity.as_ref(),
-                    )
-                    .await
-                }
+                Some(peer_client) => stream_row(&options, &client, peer_client).await,
                 None => Row::structural("stream", "stream_payload_bidirectional")
-                    .identity(local_identity.as_ref())
                     .skipped(
                         "peer_endpoint_unavailable",
-                        "--peer-endpoint is required to exchange payload with a second bridge",
+                        "--peer-endpoint is required to create a second SAM client for payload exchange",
                     ),
             }
         };
@@ -1048,8 +1224,6 @@ async fn run() -> Result<ExitCode, (u8, String)> {
                         peer_client,
                         style,
                         transport,
-                        local_identity.as_ref(),
-                        peer_identity.as_ref(),
                     )
                     .await
                 }
@@ -1062,7 +1236,6 @@ async fn run() -> Result<ExitCode, (u8, String)> {
                         }
                     },
                 )
-                .identity(local_identity.as_ref())
                 .skipped(
                     if style.supports_control_socket_datagram() {
                         "peer_endpoint_unavailable"
@@ -1072,7 +1245,7 @@ async fn run() -> Result<ExitCode, (u8, String)> {
                     match transport {
                         DatagramTransport::ControlSocketV1 if !style.supports_control_socket_datagram() =>
                             "v1/v2-compatible control-socket datagram commands are excluded for this style",
-                        _ => "--peer-endpoint is required to exchange payload with a second bridge",
+                        _ => "--peer-endpoint is required to create a second SAM client for payload exchange",
                     },
                 ),
             };
@@ -1081,32 +1254,52 @@ async fn run() -> Result<ExitCode, (u8, String)> {
     }
     if options.plan.wants_shared() {
         for dialect in [SharedDialect::Primary, SharedDialect::Master] {
-            let row = match peer_client {
+            let dialect_rows = match peer_client {
                 Some(peer_client) => {
-                    shared_row(
+                    shared_rows(
                         &options,
                         &client,
                         peer_client,
                         dialect,
-                        local_identity.as_ref(),
                     )
                     .await
                 }
-                None => Row::structural("shared", "shared_subsession_payload_single_destination")
+                None => vec![
+                    Row::structural(
+                        "shared",
+                        "shared_subsession_stream_payload_single_destination",
+                    )
                     .dialect(dialect)
-                    .identity(local_identity.as_ref())
                     .skipped(
                         "peer_endpoint_unavailable",
-                        "--peer-endpoint is required to observe shared-session payload identity",
+                        "--peer-endpoint is required to create a second SAM client through this or another router",
                     ),
+                    Row::structural(
+                        "shared",
+                        "shared_subsession_datagram_payload_single_destination",
+                    )
+                    .dialect(dialect)
+                    .skipped(
+                        "peer_endpoint_unavailable",
+                        "--peer-endpoint is required to create a second SAM client through this or another router",
+                    ),
+                ],
             };
-            rows.push(row_json(&row));
+            rows.extend(dialect_rows.iter().map(row_json));
         }
     }
 
     let capabilities = client.capabilities().await;
     let summary = summarise(&rows);
     let capability_passes = summary.get("pass").copied().unwrap_or(0);
+    let artifact_local_identity = rows
+        .iter()
+        .find_map(|row| {
+            row.get("local_identity")
+                .filter(|value| !value.is_null())
+                .cloned()
+        })
+        .unwrap_or(Value::Null);
     let artifact = json!({
         "schema_version": "1.1",
         "router": options.router,
@@ -1118,15 +1311,7 @@ async fn run() -> Result<ExitCode, (u8, String)> {
         "negotiated_sam_version": negotiated.map(|version| format!("{}.{}", version.major, version.minor)),
         "generated_at": timestamp(),
         "plan": plan_name(options.plan),
-        "local_identity": local_identity
-            .as_ref()
-            .map(|identity| {
-                identity_json(Some(&(
-                    identity.destination().as_str().to_owned(),
-                    identity.hash().to_string(),
-                )))
-            })
-            .unwrap_or(Value::Null),
+        "local_identity": artifact_local_identity,
         "capabilities": {
             "stream": capabilities.stream.as_str(),
             "datagram": capabilities.datagram.as_str(),

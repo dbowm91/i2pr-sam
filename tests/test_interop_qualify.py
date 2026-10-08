@@ -123,6 +123,18 @@ class QualificationHarnessTests(unittest.TestCase):
         self.assertEqual([row["result"] for row in artifact["rows"]], ["not_run"])
         self.assertEqual(artifact["summary"]["capability_passes"], 0)
 
+    def test_shared_not_run_synthesis_accounts_for_each_child_operation(self) -> None:
+        artifact = qualify.synthesize_not_run(router(), "endpoint", "shared", qualify._diag("blocked", "detail"), "detail")
+        self.assertEqual(len(artifact["rows"]), 4)
+        self.assertEqual(
+            [row["operation"] for row in artifact["rows"]],
+            [
+                "shared_subsession_stream_payload_single_destination",
+                "shared_subsession_datagram_payload_single_destination",
+            ] * 2,
+        )
+        self.assertEqual([row["shared_dialect"] for row in artifact["rows"]], ["PRIMARY", "PRIMARY", "MASTER", "MASTER"])
+
     def test_python_cache_artifacts_are_not_tracked(self) -> None:
         tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.splitlines()
         self.assertFalse([path for path in tracked if "__pycache__/" in path or path.endswith((".pyc", ".pyo"))])

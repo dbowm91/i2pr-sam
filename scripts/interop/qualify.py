@@ -440,13 +440,16 @@ def synthesize_not_run(router: Router, endpoint: str, plan: str, diagnostic: dic
     """A truthful artifact for a lane that could not start: every requested feature is not_run."""
     rows = []
     for feature, dialect in PLAN_FEATURES[plan]:
-        operation = (
-            f"shared_{dialect.lower()}_payload_exchange"
+        operations = (
+            (
+                "shared_subsession_stream_payload_single_destination",
+                "shared_subsession_datagram_payload_single_destination",
+            )
             if dialect
-            else f"{feature}_payload_exchange"
+            else (f"{feature}_payload_exchange",)
         )
-        rows.append(
-            {
+        for operation in operations:
+            rows.append({
                 "feature": feature,
                 "operation": operation,
                 "shared_dialect": dialect,
@@ -463,8 +466,7 @@ def synthesize_not_run(router: Router, endpoint: str, plan: str, diagnostic: dic
                 },
                 "diagnostic_category": diagnostic["category"],
                 "notes": detail,
-            }
-        )
+            })
     counts = {"pass": 0, "unsupported": 0, "fail": 0, "not_run": len(rows), "create_only": 0, "capability_passes": 0}
     return {
         "schema_version": SCHEMA_VERSION,

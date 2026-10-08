@@ -99,11 +99,10 @@ temporary local UDP echo server tunnel. The matrix still had zero payload passes
 rows were `not_run` because transient peer identity resolution failed, PRIMARY was explicitly
 `unsupported`, and MASTER timed out. A direct datagram echo probe also timed out. The
 schema-valid artifact and matrix are under
-`artifacts/interop/m011-2026-10-08/i2pd-same-router-udpserver-*`. This confirms the remaining
-runner limitation is its generated-peer setup; a known-destination lane and a functioning
-receive service are needed to qualify DATAGRAM/RAW. Shared-session validation still needs
-an in-router SAM peer that can observe child identity. These outcomes do not indicate a
-cross-router incompatibility.
+`artifacts/interop/m011-2026-10-08/i2pd-same-router-udpserver-*`. The runner limitation at
+that revision was its generated-peer setup. The correction and current same-router
+requirements are recorded below; these historical outcomes do not indicate a cross-router
+incompatibility.
 
 ## Known-service STREAM lane and remaining closure prerequisites
 
@@ -117,14 +116,13 @@ replace the earlier standalone-example evidence with a runner artifact.
 
 The remaining feature closure requires more than a known hostname:
 
-- D1/RAW UDP-forwarded and control-socket rows need a datagram receiver with a reply path.
-  For i2pd, its documented `udpserver` tunnel forwards datagrams to a local UDP service;
-  a local echo service must reply using the tunnel's expected request/reply framing.
-- D2/D3 need receiver behavior matching those format-specific payloads so authenticated
-  D2 sources and unverified D3 hashes can be observed correctly.
-- Shared rows need a second SAM client on the same router to observe the shared owner's
-  concrete Destination, receive STREAM/datagram child payloads, and exercise child removal
-  and owner teardown. This is a same-router test, not a second-router test.
+- D1/RAW UDP-forwarded and control-socket rows create actual transient receiver sessions
+  through the same router as the sender.
+- D2/D3 create matching same-router receiver sessions and check authenticated D2 identity
+  versus unverified D3 source behavior.
+- Shared rows use a second SAM client on the same router to receive STREAM/datagram child
+  payloads, verify the shared owner's concrete Destination, remove a child, and observe
+  owner teardown. No service tunnel or second router is required for these exchanges.
 - On the selected router, test PRIMARY and MASTER and use whichever supported dialect
   passes the shared payload checks. An explicit rejection is `unsupported`; timeout,
   missing identity, or tunnel unavailability is `not_run`. Existing i2pd observations are
@@ -139,7 +137,33 @@ as router-specific `unsupported`, not as evidence about unrelated rows. See the
 [SAM v3 reference](https://i2p.net/en/docs/api/samv3/).
 
 The [M011 plan](../plans/implementation/sam-library/011-live-router-payload-qualification.md)
-tracks these rows and the additive M005/M006 closure reconciliation. The i2pd tunnel docs
-specify that `udpserver` forwards I2P datagrams to one local UDP endpoint, and that
-`udpclient` forwards one local UDP endpoint to a remote Destination;
-see [i2pd tunnel configuration](https://docs.i2pd.website/en/latest/user-guide/tunnels/).
+tracks these rows and the additive M005/M006 closure reconciliation.
+
+## 2026-10-08 — same-router harness correction
+
+Review of the runner found that it resolved a peer Destination in a temporary session,
+closed that session, then sent to that identity from a different transient session. The
+ordinary STREAM path also connected to the sending session's identity instead of the
+accepting session's identity. Datagram rows had the equivalent sender/receiver reversal.
+`sam-conformance` now creates the actual sessions first, targets the receiving session's
+concrete Destination, and checks the observed source against the actual sender session.
+Shared dialect coverage now emits separate STREAM-child and DATAGRAM-child rows, proves
+that both children expose the owner's Destination, removes the STREAM child, and checks that
+closing the owner invalidates the remaining DATAGRAM child. Blocked shared-plan synthesis
+now accounts for both operations per dialect.
+
+This correction needs only two SAM clients connected through one router. The DATAGRAM/RAW
+rows use the actual transient receiver session and local forwarding socket; they do not
+depend on a separately configured I2P UDP echo tunnel. The router still needs working
+tunnels for the exchanges to complete, and this harness correction is not itself live
+router evidence.
+
+The corrected binary passed `cargo check --locked -p i2pr-sam --bin sam-conformance`; the
+qualification harness tests passed (13 tests), and the artifact validator self-test passed.
+A qualification preflight against `127.0.0.1:17656` exited `3` with
+`provisioning_port_closed` and synthesized four valid `not_run` rows for the two shared
+operations under PRIMARY and MASTER. No SAM bridge was listening on this host during the
+attempt, so no live payload row ran and M011 remains open. The official
+[SAM v3 reference](https://i2p.net/en/docs/api/samv3/) documents shared subsessions as
+using one Destination/tunnel set, and notes that i2pd calls the dialect MASTER; these facts
+support the single-router test topology but do not replace runtime evidence.

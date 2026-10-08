@@ -2,7 +2,7 @@
 
 Class: corrective qualification + infrastructure.
 
-Status: **active — Java same-router HTTP STREAM is live; harness now records a known-service lane; payload matrix remains open**.
+Status: **active — same-router service HTTP was proven directly; harness now records HTTP and same-router peer payload evidence; live matrix remains open**.
 
 ## Objective
 
@@ -29,9 +29,10 @@ advisory; the live runner tests the actual configured router and peer topology.
 - `scripts/interop/qualify.py` provisions, probes, runs, validates, and merges artifacts
   for Java I2P, i2pd, and i2pr, and exits `3` with a named diagnostic category when a lane
   cannot start.
-- `sam-conformance` performs the real semantic operations: bidirectional stream payload with
-  non-silent accept peer capture, D1/D2/D3/RAW payload exchange over both transports, and
-  shared-session subsession exchange with per-child same-Destination proof.
+- `sam-conformance` performs the real semantic operations: known-service HTTP STREAM,
+  bidirectional STREAM payload with non-silent accept peer capture, D1/D2/D3/RAW payload
+  exchange over supported transports, and shared STREAM/DATAGRAM child payload exchange
+  with owner Destination, child removal, and owner teardown checks.
 - `scripts/check-conformance-artifact.py` rejects any artifact claiming a pass without
   payload evidence.
 - `scripts/interop/udp_egress_probe.py` reports observed UDP replies or unknown. It is
@@ -62,12 +63,13 @@ that service tunnel was active; it is superseded by this successful service-back
 
 A subsequent pinned-i2pd same-router attempt configured a temporary UDP echo server tunnel
 and pointed both harness endpoints at the same SAM bridge. The runner still produced no
-payload rows because it requires a transient peer identity before each exchange; the
-separate direct datagram echo probe timed out. The schema-valid artifact and matrix are
-preserved under `artifacts/interop/m011-2026-10-08/`. This narrows the remaining work: the
-harness must accept a known service Destination for payload tests, and DATAGRAM/RAW need a
-working echo receiver while shared-session validation needs a SAM peer that can observe
-subsession identity. These rows remain open; no cross-router tunnel is required or claimed.
+payload rows because it resolved a transient peer Destination in a separate session and
+then targeted that stale identity; the direct datagram echo probe also timed out. The
+schema-valid artifact and matrix are preserved under `artifacts/interop/m011-2026-10-08/`.
+The runner has since been corrected to target the Destination of the actual receiving
+session. D1/D2/D3/RAW and shared child payload checks use two SAM clients through the same
+router; they do not require a separate UDP echo tunnel or another router. Router tunnel
+reachability can still prevent a live exchange, in which case the row must remain `not_run`.
 
 The harness now accepts `--service-destination` for the STREAM row. It resolves the supplied
 I2P hostname or base32 address through SAM, sends `GET /` over a STREAM session, and records
@@ -84,17 +86,18 @@ remaining closure work is:
 | Evidence | Needed setup | Current status |
 |---|---|---|
 | Java HTTP STREAM request | SAM bridge and reachable HTTP server tunnel; run `qualify.py --plan stream --service-destination ...` | Prior direct probe passed; record a schema-valid artifact using the new lane |
-| D1 and RAW over UDP forwarding and control socket | Addressable I2P datagram receiver that replies to the sender; forwarded mode needs a UDP service tunnel and local echo service | Open; known-service option currently applies to STREAM |
-| D2 and D3 payload/trust semantics | Receiver that exchanges exact payloads using each SAM datagram format; record D2 authenticated and D3 unverified source behavior | Open; no live payload evidence |
-| Shared STREAM and datagram child | Two SAM clients on the same router are sufficient; one creates the shared owner and the other connects to its Destination | Open; current attempt could not resolve generated peer identity |
-| Shared lifecycle | Observe child removal and owner teardown while the same-router SAM peer exercises the child | Open |
+| D1 and RAW over UDP forwarding and control socket | Two SAM clients create transient send and receive sessions through one router; forwarded mode uses local UDP forwarding | Open; runner now targets the receiver session's concrete Destination |
+| D2 and D3 payload/trust semantics | Same-router receiver sessions exchange exact payloads; record D2 authenticated and D3 unverified source behavior | Open; runner now creates both live sessions before targeting |
+| Shared STREAM and datagram child | Two SAM clients on the same router; one owns both children and the other connects/sends to the owner's Destination | Open; runner now records separate STREAM and DATAGRAM rows |
+| Shared lifecycle | Observe successful STREAM child removal and owner close invalidating the remaining DATAGRAM child | Open; implemented in runner, awaiting live artifact |
 | Shared dialect disposition on the selected router | Try PRIMARY and MASTER; a supported dialect must pass the shared payload checks, and the other may be `unsupported` only on explicit rejection | Java has not yet been rerun through the artifact lane; old i2pd observations are informational and do not require a second router |
 | Artifact and closure reconciliation | Validate artifacts, preserve commands and router/SAM versions, and reconcile M005/M006 additively | Open |
 
-The known-service option makes loopback STREAM evidence reproducible in the main
-conformance artifact. Full foundation closure still needs live datagram receivers and a peer
-SAM client for shared-session observation; both SAM clients can connect through the same
-router bridge, so this does not require a second router.
+The known-service option makes loopback HTTP STREAM evidence reproducible in the main
+conformance artifact. The other payload lanes use a second SAM client connected to the same
+router bridge; they need no extra service tunnel. Full foundation closure still requires
+live payload rows and a router with working inbound tunnels, so implementation of the
+corrected lane does not by itself close M011.
 
 ## Invariants
 
@@ -137,9 +140,10 @@ python3 scripts/check-conformance-artifact.py artifacts/interop/<router>-conform
 ```
 
 Run these commands locally or on an operator-provisioned host that can reach a SAM bridge
-and the configured service. A same-router probe may set `--peer-endpoint` equal to
+and the configured service. A same-router probe sets `--peer-endpoint` equal to
 `--endpoint`; this tests two SAM clients through one router and does not claim cross-router
-compatibility. The focused HTTP probe directly connects to a known service Destination.
+compatibility. The focused HTTP probe directly connects to a known service Destination;
+the remaining payload rows create their own transient sender and receiver sessions.
 M012 removed
 the GitHub live workflow because no self-hosted Actions runner is registered and
 GitHub-hosted loopback cannot reach operator routers.
@@ -152,9 +156,9 @@ GitHub-hosted loopback cannot reach operator routers.
 2. D1, D2, D3, and RAW each produce a live payload row with correct trust typing; D1 and
    RAW cover both UDP-forwarded and control-socket modes, with explicit router rejection
    recorded as `unsupported` only when the router says so.
-3. A supported MASTER or PRIMARY shared session passes STREAM and datagram child payload
-   exchanges with one concrete Destination hash observed at both ends; child removal and
-   owner teardown are observed on the same router.
+3. A supported MASTER or PRIMARY shared session passes separate STREAM and datagram child
+   payload rows using one concrete Destination; the STREAM child is removed and owner close
+   invalidates the remaining DATAGRAM child.
 4. The feature matrix is exercised through one deployed router and SAM bridge. A second
    router implementation or cross-router tunnel is not required by this amended basis.
 5. Every conformance artifact validates against the schema, and the matrix has no `fail`
@@ -175,11 +179,11 @@ versions actually exercised, and the exact revision at which each row passed.
 ## Handoff notes
 
 Run from a host that has provisioned a router and a reachable SAM bridge/service. The peer
-endpoint is passed through to `sam-conformance`. UDP preflight is advisory; a
-known bridge is attempted regardless of arbitrary UDP probe silence. The focused
-`sam-http-get` path resolves the service Destination through the SAM bridge and tests a
-real request/response over STREAM. It can use a router's own HTTP server tunnel and does
-not require cross-router tunnels. The full matrix still requires payload evidence for each
-in-scope feature, but it no longer requires a second router implementation. The harness's
-known-service lane covers the HTTP STREAM case; datagram and shared rows need the separate
-receiver and SAM-peer configurations recorded above.
+endpoint is passed through to `sam-conformance`; it may be the same bridge endpoint.
+UDP preflight is advisory; a known bridge is attempted regardless of arbitrary UDP probe
+silence. The focused `sam-http-get` path and known-service runner lane resolve a service
+Destination through SAM and test an HTTP request/response over STREAM. It can use a router's
+own HTTP server tunnel and does not require cross-router tunnels. The full matrix still
+requires live payload evidence for each in-scope feature, but it no longer requires an
+external datagram receiver or a second router implementation: datagram and shared rows
+create their receiver/peer SAM sessions through the selected router.
