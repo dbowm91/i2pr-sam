@@ -94,6 +94,28 @@ blocking stream reads and writes have explicit configurable deadlines. It mirror
 surface: typed ports, `DatagramTransport`, `accept_with`, peer identity, shared identity, and
 `connect_with_policy`.
 
+```rust,no_run
+use i2pr_sam::{SessionDestination, SessionStyle};
+use i2pr_sam_blocking::BlockingClient;
+use std::time::Duration;
+
+let client = BlockingClient::connect_endpoint("127.0.0.1:7656".parse()?)?;
+let mut session = client.create_datagram_session(
+    &SessionDestination::Transient,
+    "example",
+    SessionStyle::Datagram,
+    &[],
+)?;
+session.set_recv_timeout(Duration::from_secs(10));
+session.send("peer.b32.i2p", b"payload", None, None)?;
+let response = session.recv()?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+The blocking facade uses the async client's framing, transport, source-trust types, and
+shared-session identity. A receive timeout cancels that call instead of detaching a task
+that can consume a later datagram.
+
 ## Bounded protocol behavior
 
 The protocol line limit is 16 KiB, the token count limit is 128, keys are limited to 128

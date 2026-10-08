@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: active — M005 and M006 executed and conditionally closed; M011 live payload qualification ready on a router-enabled host.
+Status: active — M005 and M006 retain their historical conditional closures; M012 and M013 are closed; M011 is blocked on suitable live router provisioning.
 
 Long-term references:
 
@@ -280,10 +280,10 @@ Class: corrective qualification + infrastructure.
 
 Objective: produce the live multi-router payload matrix that M005 could not run.
 
-Dependency: **M012 harness-correctness closure plus router provisioning**. The first M011
-registration overstated readiness: its peer-endpoint path is currently broken, its hosted
-workflow topology cannot reach a user's local routers, and its UDP preflight draws a hard
-negative conclusion from non-cooperative endpoints. M012 owns those repository defects.
+Dependency: **M012 harness-correctness closure plus router provisioning**. M012 repaired the
+peer-endpoint path, moved the manual workflow to an explicitly labeled self-hosted topology,
+and made UDP preflight advisory because silence from arbitrary endpoints cannot prove an
+egress restriction.
 
 Exit: after M012, Java I2P plus at least one second router pass stream payload in both
 directions with peer-observable identity, datagram families pass with correct trust typing,
@@ -299,8 +299,8 @@ Python bytecode from version control.
 
 Dependency: none beyond the current M005/M006 implementation.
 
-Exit: M011's machinery is actually executable on a suitable router host and only
-environment/router provisioning remains.
+Exit: M011's machinery is executable on a suitable router host and only environment/router
+provisioning remains. **Closed**; see `plans/closure/sam-library/012-status.md`.
 
 ### 013 — Blocking parity and foundation closure-truth corrective
 
@@ -312,8 +312,8 @@ implementation.
 
 Dependency: none on M012; may execute in parallel.
 
-Exit: the non-live Rust foundation verification is truthful and complete. After both M012
-and M013 close, M011 is the sole remaining foundation gate.
+Exit: the non-live Rust foundation verification is truthful and complete. **Closed**; see
+`plans/closure/sam-library/013-status.md`. M011 is the sole remaining foundation gate.
 
 ## 8. Cross-cutting requirements
 
@@ -400,6 +400,6 @@ closure and must not begin implementation before the corrective/live chain is co
 | 008 | proposed | — | — | 011 strict closure + 013 + stable merged i2pr portable-core revision |
 | 009 | proposed | — | — | 008 |
 | 010 | proposed | — | — | 009 |
-| 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | — | 012 closure + suitable router provisioning |
-| 012 | ready | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | — | — |
-| 013 | ready | `plans/implementation/sam-library/013-blocking-parity-and-foundation-closure-truth-corrective.md` | — | — |
+| 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | — | suitable two-router provisioning and reachable SAM bridges |
+| 012 | closed | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | `plans/closure/sam-library/012-status.md` | — |
+| 013 | closed | `plans/implementation/sam-library/013-blocking-parity-and-foundation-closure-truth-corrective.md` | `plans/closure/sam-library/013-status.md` | — |

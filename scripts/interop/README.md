@@ -27,7 +27,7 @@ how a failed build could masquerade as a completed lane.
 |---|---|
 | `routers.json` | Declarative pins and provisioning hints for the three router targets. |
 | `qualify.py` | Qualification driver: probes, runner invocation, validation, matrix, summary. |
-| `udp_egress_probe.py` | Standalone UDP egress probe. Imports nothing from the harness. |
+| `udp_egress_probe.py` | Standalone advisory UDP reachability probe. Imports nothing from the harness. |
 | `__init__.py` | Package marker and scope statement. |
 
 ## Exact commands
@@ -36,8 +36,8 @@ how a failed build could masquerade as a completed lane.
 # Compile check
 python3 -m py_compile scripts/interop/*.py
 
-# Is this host able to run an I2P router at all?
-python3 scripts/interop/udp_egress_probe.py          # exit 0 = egress, 1 = blocked
+# Is there any observed UDP request/reply path? No reply means unknown, not blocked.
+python3 scripts/interop/udp_egress_probe.py          # exit 0 = reply observed, 1 = unknown
 
 # Qualify one router
 python3 scripts/interop/qualify.py --router "Java I2P"
@@ -50,7 +50,8 @@ python3 scripts/interop/qualify.py --all
 python3 scripts/interop/qualify.py --all --json-summary artifacts/interop/run-summary.json
 ```
 
-`qualify.py` flags: `--router LABEL` (repeatable), `--all`, `--endpoint HOST:PORT`
+`qualify.py` flags: `--router LABEL` (repeatable), `--all`, `--endpoint HOST:PORT`,
+`--peer-endpoint HOST:PORT` (second bridge used for peer-observed payload exchange)
 (overrides `routers.json`), `--plan full|stream|datagram|shared`, `--artifact-dir`
 (default `artifacts/interop`), `--matrix-out` (default
 `artifacts/interop/interop-matrix.csv`), `--skip-udp-probe`, `--json-summary PATH`,
@@ -149,7 +150,7 @@ reports the root cause rather than a downstream symptom.
 | Category | Meaning |
 |---|---|
 | `provisioning_binary_missing` | The router's documented binary is not on `PATH`. For Java I2P (`binary_probe: bridge_only`) this is informational, because it ships no single-binary entry point. |
-| `provisioning_udp_egress_blocked` | The standalone probe could not get a UDP reply. Without UDP egress no router can join the I2P network. |
+| `provisioning_udp_egress_blocked` | Legacy category retained for compatibility; the UDP probe is advisory and never emits a blocking verdict. |
 | `provisioning_port_closed` | No TCP listener on the SAM bridge endpoint. |
 | `provisioning_bridge_unreachable` | A listener exists but does not answer `HELLO ...` with `HELLO REPLY`. |
 | `runner_binary_missing` | `cargo` is unavailable, so `sam-conformance` cannot be built. |
@@ -171,8 +172,9 @@ cannot run one:
 - Java I2P is not started, and there is no listener on 7656;
 - access to the Docker daemon socket is denied (`docker ps` fails on
   `/var/run/docker.sock`), so containerized router provisioning is unavailable;
-- outbound UDP behaviour is host-dependent and must be established by running
-  `udp_egress_probe.py` — a router cannot join the I2P network without it.
+- the UDP probe reports positive replies or `unknown`; arbitrary endpoint silence
+  cannot distinguish filtering from a non-responsive service, so it never blocks a
+  known SAM bridge from being attempted.
 
 Every live lane here ends in `not_run` with a provisioning diagnostic. That is an
 environment fact, not a router compatibility verdict. Repeat the commands in a
@@ -183,6 +185,11 @@ execution.
 
 `i2pr` is qualified only through its own SAM bridge on the configured endpoint.
 The harness never claims the router ran from inside this repository.
+
+The manual GitHub Actions workflow runs on a self-hosted runner labeled
+`i2p-interop`. That runner must host the configured routers or be able to route to
+both the primary and peer SAM endpoints. GitHub-hosted loopback is isolated from
+the operator's machine and is not a live qualification topology.
 
 ## Adding a router
 

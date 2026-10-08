@@ -9,11 +9,11 @@ Status: **ready on provisioning**; blocked only on a router-enabled host.
 Produce the live multi-router payload matrix that milestone 005 could not run, so the
 foundation's conditional closures can be reconciled to a strict post-corrective closure.
 
-Milestone 005 corrected the protocol behaviour and the reporting machinery but could not
-execute a single live payload row: the implementation host has no router binary, no
-container runtime access, and UDP egress restricted to port 53, so an I2P router cannot
-peer over SSU on random high ports. Everything a live run would prove is already
-implemented and deterministically tested; what is missing is the environment.
+Milestone 005 corrected the protocol behaviour and reporting machinery but could not
+execute a single live payload row. The implementation host has no provisioned router or
+reachable SAM bridge. The earlier UDP probe observed replies only on port 53, but its
+silence at arbitrary endpoints cannot establish an egress policy. UDP probe results are
+advisory; the live runner tests the actual configured router and peer topology.
 
 ## Why ready
 
@@ -25,8 +25,8 @@ implemented and deterministically tested; what is missing is the environment.
   shared-session subsession exchange with per-child same-Destination proof.
 - `scripts/check-conformance-artifact.py` rejects any artifact claiming a pass without
   payload evidence.
-- `scripts/interop/udp_egress_probe.py` distinguishes restricted UDP from router-capable
-  UDP, so a blocked host is named as such instead of being reported as a router failure.
+- `scripts/interop/udp_egress_probe.py` reports observed UDP replies or unknown. It is
+  advisory and does not prevent attempting a known SAM bridge.
 
 ## Current evidence
 
@@ -96,6 +96,7 @@ versions actually exercised, and the exact revision at which each row passed.
 
 ## Handoff notes
 
-Nothing here should be started on a host without a provisioned router. Run the UDP egress
-probe first: if `i2p_router_udp_capable` is false, the lane cannot run and the milestone stays
-blocked regardless of installed software.
+Run from a host that has provisioned routers or can route to both configured SAM bridges.
+The peer endpoint is passed through to `sam-conformance`. UDP preflight is advisory; a
+known bridge is attempted regardless of arbitrary UDP probe silence. M011 remains blocked
+until suitable multi-router provisioning and the required live payload evidence exist.

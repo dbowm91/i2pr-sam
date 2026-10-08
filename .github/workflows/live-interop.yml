@@ -2,8 +2,7 @@ name: live-interop
 
 # Manual only, on purpose.
 #
-# Live router qualification needs a real I2P bridge, unrestricted UDP egress, and a
-# provisioned router. Ordinary CI must never depend on external public I2P
+# Live router qualification needs a real I2P bridge and a provisioned router. Ordinary CI must never depend on external public I2P
 # availability, so this workflow has no push/pull_request/schedule trigger: a lane is
 # run when a human has a router in front of them and can say which router it was.
 #
@@ -49,9 +48,9 @@ concurrency:
 jobs:
   qualify:
     name: live-interop
-    # Router provisioning in scripts/interop/routers.json is Linux-shaped, and the
-    # harness invokes cargo and POSIX tooling directly. No Docker is used anywhere.
-    runs-on: ubuntu-latest
+    # This labeled runner must host, or be routable to, the configured SAM bridges.
+    # GitHub-hosted loopback is isolated from a user's router host.
+    runs-on: [self-hosted, linux, x64, i2p-interop]
     timeout-minutes: 45
     permissions:
       contents: read
@@ -86,10 +85,8 @@ jobs:
             echo "| plan | \`$PLAN\` |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # UDP egress probe. This is reported, never enforced here: the probe exits 1 when
-      # UDP egress is restricted, and failing the job at this point would mask the
-      # harness's own "blocked" conclusion with a bare environment error. qualify.py
-      # re-runs the same probe and is the component that decides blocked vs. failed.
+      # UDP egress probe is advisory: arbitrary endpoint silence cannot establish
+      # filtering, and a known SAM bridge should still be attempted.
       - name: "Prerequisite: UDP egress probe (informational)"
         continue-on-error: true
         run: |
@@ -99,19 +96,6 @@ jobs:
           echo "udp_egress_probe exit code: $probe_rc"
           echo "udp_egress_probe exit code: $probe_rc" >> "$GITHUB_STEP_SUMMARY"
 
-      # peer_endpoint is a sam-conformance runner flag, not a qualify.py flag. The
-      # harness builds the runner argv itself (scripts/interop/qualify.py
-      # runner_command) and always emits peer_endpoint: null, so there is nothing to
-      # pass through. Passing --peer-endpoint to qualify.py would be an argparse usage
-      # error (exit 2) and would turn a configuration detail into a false lane failure.
-      # Surface it honestly instead of inventing a flag.
-      - name: Note unplumbed peer_endpoint input
-        if: ${{ inputs.peer_endpoint != '' }}
-        run: |
-          set -euo pipefail
-          echo "::warning title=peer_endpoint not plumbed::scripts/interop/qualify.py has no --peer-endpoint flag; the runner is invoked without a peer bridge, so peer-observed payload lanes will be reported as skipped/peer_endpoint_unavailable."
-          echo "| peer_endpoint input | \`$PEER_ENDPOINT\` (not passed to qualify.py: no such flag) |" >> "$GITHUB_STEP_SUMMARY"
-
       - name: Qualify lanes against the router
         id: qualify
         run: |
@@ -120,10 +104,11 @@ jobs:
           # that artifacts are validated and uploaded even when the lane failed, and so
           # that exit 3 can be reported as blocked rather than as a generic failure.
           qualify_rc=0
-          python3 scripts/interop/qualify.py \
-            --router "$ROUTER" \
-            --endpoint "$ENDPOINT" \
-            --plan "$PLAN" \
+          args=(--router "$ROUTER" --endpoint "$ENDPOINT" --plan "$PLAN")
+          if [ -n "$PEER_ENDPOINT" ]; then
+            args+=(--peer-endpoint "$PEER_ENDPOINT")
+          fi
+          python3 scripts/interop/qualify.py "${args[@]}" \
             --json-summary artifacts/interop/run-summary.json \
             2>&1 | tee qualify.log || qualify_rc=${PIPESTATUS[0]}
           echo "exit_code=$qualify_rc" >> "$GITHUB_OUTPUT"

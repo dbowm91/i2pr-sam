@@ -227,12 +227,17 @@ def probe_tcp_port(endpoint: str, timeout: float) -> dict[str, str]:
         return _diag(DIAG_PORT_CLOSED, f"no TCP listener on {endpoint}: {type(error).__name__}: {error}", blocking=True)
 
 
-def probe_udp_egress(timeout: float = UDP_PROBE_TIMEOUT) -> dict[str, str]:
-    """Delegate to the standalone probe so the criterion stays independently runnable.
+def udp_reachability(result: dict[str, Any]) -> str:
+    """Normalize evidence to reachable/unreachable/unknown without inferring from silence."""
+    if result.get("reachability") == "reachable" or result.get("reachable"):
+        return "reachable"
+    if result.get("reachability") == "unreachable" and result.get("unreachable_evidence"):
+        return "unreachable"
+    return "unknown"
 
-    The probe keeps its own short default: a blocked host should fail in seconds,
-    not after the multi-minute runner timeout.
-    """
+
+def probe_udp_egress(timeout: float = UDP_PROBE_TIMEOUT) -> dict[str, str]:
+    """Return advisory UDP evidence; arbitrary remote silence is inconclusive."""
     try:
         completed = subprocess.run(
             [sys.executable, str(UDP_PROBE), "--timeout", str(timeout)],
@@ -242,22 +247,20 @@ def probe_udp_egress(timeout: float = UDP_PROBE_TIMEOUT) -> dict[str, str]:
             check=False,
         )
     except (OSError, subprocess.SubprocessError) as error:
-        return _diag(DIAG_UDP_BLOCKED, f"udp egress probe could not run: {type(error).__name__}: {error}", blocking=True)
+        return _diag(DIAG_UDP_BLOCKED, f"UDP probe unavailable (advisory): {type(error).__name__}: {error}")
     try:
         result = json.loads(completed.stdout.strip() or "{}")
     except json.JSONDecodeError as error:
-        return _diag(DIAG_UDP_BLOCKED, f"udp egress probe returned non-JSON output: {error}", blocking=True)
-    if result.get("i2p_router_udp_capable"):
-        return _diag(DIAG_UDP_BLOCKED, f"udp egress available ({result.get('verdict')})")
-    # Restricted UDP (for example DNS on 53 only) still blocks a router: I2P peers on
-    # SSU use random high ports. Reporting this as available would hide a real blocker.
+        return _diag(DIAG_UDP_BLOCKED, f"UDP probe returned non-JSON output (advisory): {error}")
     reachable = result.get("reachable") or []
-    detail = (
-        f"udp reachable only on {reachable}: {result.get('verdict')}"
-        if reachable
-        else f"udp egress blocked: {result.get('error')}"
-    )
-    return _diag(DIAG_UDP_BLOCKED, detail, blocking=True)
+    reachability = udp_reachability(result)
+    if reachability == "reachable":
+        detail = f"UDP request/reply observed at {reachable}; this does not prove general peer reachability"
+    elif reachability == "unreachable":
+        detail = f"UDP unreachable with positive network evidence: {result['unreachable_evidence']} (advisory)"
+    else:
+        detail = "UDP reachability unknown: arbitrary endpoint silence cannot distinguish filtering from remote silence"
+    return _diag(DIAG_UDP_BLOCKED, detail)
 
 
 def probe_bridge(endpoint: str, timeout: float) -> dict[str, str]:
@@ -287,7 +290,7 @@ def runner_command(
     output: Path,
     peer_endpoint: str | None = None,
 ) -> list[str]:
-    return [
+    argv = [
         "cargo",
         "run",
         "--locked",
@@ -550,6 +553,15 @@ def print_summary(outcomes: list[Outcome], matrix_path: Path) -> None:
     print(f"matrix: {matrix_path}")
 
 
+def qualification_exit_code(outcomes: list[Outcome]) -> int:
+    """Hard failure/invalid artifact outranks a blocked lane; otherwise 3 means blocked."""
+    if any(not outcome.artifact_valid or outcome.has_fail_rows() for outcome in outcomes):
+        return 1
+    if any(outcome.blocking_diagnostic() is not None for outcome in outcomes):
+        return 3
+    return 0
+
+
 # --------------------------------------------------------------------------
 # orchestration
 # --------------------------------------------------------------------------
@@ -646,7 +658,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--plan", default=None, choices=sorted(PLAN_FEATURES), help="lane plan (default: routers.json default_plan)")
     parser.add_argument("--artifact-dir", default="artifacts/interop", help="directory for artifacts and logs (default: artifacts/interop)")
     parser.add_argument("--matrix-out", default="artifacts/interop/interop-matrix.csv", help="merged CSV matrix path")
-    parser.add_argument("--skip-udp-probe", action="store_true", help="skip the UDP egress prerequisite probe")
+    parser.add_argument("--skip-udp-probe", action="store_true", help="skip the advisory UDP egress probe")
     parser.add_argument("--json-summary", default=None, metavar="PATH", help="also write a machine-readable run summary")
     parser.add_argument("--timeout", type=float, default=300.0, help="per-router runner timeout in seconds (default: 300)")
     return parser
@@ -700,13 +712,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print_summary(outcomes, matrix_path)
 
-    # Exit-code precedence: a hard result (fail row / invalid artifact) outranks
-    # a blocked lane, because a blocked lane already says nothing about the wire.
-    if any(not o.artifact_valid or o.has_fail_rows() for o in outcomes):
-        return 1
-    if any(o.blocking_diagnostic() is not None for o in outcomes):
-        return 3
-    return 0
+    return qualification_exit_code(outcomes)
 
 
 if __name__ == "__main__":

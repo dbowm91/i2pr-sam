@@ -27,7 +27,7 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | active corrective batch | `plans/subsystems/sam-library-roadmap.md` | M012 + M013 ready; M011 blocked on M012 | M001 closed; M002–M006 conditionally closed. Audit found M011 harness defects (peer endpoint/workflow/UDP preflight) and an unsupported M006 blocking-parity claim. M012 fixes qualification machinery; M013 supplies parity evidence. |
+| SAM library foundation | active live qualification | `plans/subsystems/sam-library-roadmap.md` | M011 blocked on suitable router provisioning | M001 closed; M002–M006 retain historical conditional closure. M012 repaired qualification machinery; M013 supplied the missing blocking parity evidence. M011 is now the sole remaining foundation gate. |
 
 ## Dependency-ready implementation plans
 
@@ -46,6 +46,8 @@ Canonical direction:
 | SAM library | 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | Live router qualification and broader recovery evidence |
 | SAM library | 005 | conditionally closed | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | Live multi-router payload matrix; corrected in M011 |
 | SAM library | 006 | conditionally closed | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | M005 strict closure, i.e. M011 |
+| SAM library | 012 | closed | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | — |
+| SAM library | 013 | closed | `plans/implementation/sam-library/013-blocking-parity-and-foundation-closure-truth-corrective.md` | — |
 
 Closure evidence is under `plans/closure/sam-library/`.
 
@@ -53,7 +55,7 @@ Closure evidence is under `plans/closure/sam-library/`.
 
 | Subsystem | Milestone | State | Handoff | Blocker |
 |---|---:|---|---|---|
-| SAM library | 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | M012 closure plus suitable router provisioning |
+| SAM library | 011 | blocked | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | Suitable two-router provisioning and reachable SAM bridges |
 
 ## Future roadmap-only work
 
@@ -67,12 +69,12 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
   stable selected revision at implementation time.
 - M009 tunnel daemon/config/persistence/management API — depends on M008.
 - M010 CLI/WebUI/sidecar packaging — depends on M009.
-- M011 live router payload qualification — registered by M005/M006 closure review, but currently blocked on M012 because its peer-endpoint/workflow/readiness machinery is not yet trustworthy.
-- M012 live qualification harness correctness — ready; repairs M011's evidence machinery and Python-artifact hygiene.
-- M013 blocking parity and closure truth — ready in parallel; supplies the DATAGRAM/RAW/D2/D3/shared/timeout/runtime parity evidence missing from M006.
+- M011 live router payload qualification — blocked only on suitable two-router provisioning; M012 and M013 are closed.
+- M012 live qualification harness correctness — closed; peer-endpoint flow, advisory UDP semantics, self-hosted workflow topology, regression checks, and Python-artifact hygiene are corrected.
+- M013 blocking parity and closure truth — closed; its additive record supplies the DATAGRAM/RAW/D2/D3/shared/timeout/runtime parity evidence missing from M006.
 
 ## Active sequence
 
-`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(ready harness corrective), 013(ready blocking-parity corrective)}; 012 -> 011(blocked live qualification); 011 + 013 -> strict foundation closure`
+`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed)} -> 011(blocked on live router provisioning) -> strict foundation closure`
 
-Bindings and the service-tunnel adapter remain not implementation-ready. M011 is not an environment-only task yet: M012 must first repair its peer-endpoint path, workflow topology, and UDP readiness semantics. M013 independently closes the blocking-parity evidence gap. Only after M012 and M013 close should M011 be treated as the sole remaining live qualification gate.
+Bindings and the service-tunnel adapter remain not implementation-ready. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M011 is now the sole remaining foundation gate and is blocked on suitable two-router provisioning.

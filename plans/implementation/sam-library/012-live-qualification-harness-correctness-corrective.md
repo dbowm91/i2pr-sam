@@ -2,7 +2,7 @@
 
 Class: corrective infrastructure + invariant.
 
-Status: **ready**.
+Status: **closed**; see `plans/closure/sam-library/012-status.md`.
 
 Repository baseline: `15f93089040691a1354d9c3b24d31a586ed655af`.
 

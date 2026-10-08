@@ -12,8 +12,9 @@ codec, async client, blocking facade, both datagram transports, concrete shared-
 identity, the conformance runner, the interop harness, and hosted CI are implemented.
 
 The one thing that does **not** exist is live router evidence: no Java I2P, i2pd, or i2pr
-payload row has ever passed, because the implementation host has no router and restricts
-UDP egress to port 53, which prevents I2P peers from establishing tunnels. Milestones 005
+payload row has ever passed. The implementation host has no provisioned router or reachable
+SAM bridge. UDP probe silence at arbitrary endpoints is inconclusive and is no longer used
+to infer an egress policy. Milestones 005
 and 006 are therefore conditionally closed, and milestone 011 carries the live payload
 matrix as the gate for strict closure. See `plans/closure/sam-library/` for exact
 boundaries.
@@ -94,9 +95,10 @@ python3 scripts/interop/udp_egress_probe.py
 python3 scripts/interop/qualify.py --all
 ```
 
-If the UDP probe cannot reach a non-standard port, the host cannot run an I2P router and
-the live lane will report `not_run` with a named diagnostic. That is an environment result,
-not a compatibility result.
+The UDP probe is advisory: a reply proves one request/reply path works, while silence is
+`unknown`. Qualification proceeds to the configured SAM bridge regardless. The manual
+workflow requires a self-hosted runner labeled `i2p-interop` with both bridge endpoints
+routable from that host.
 
 ## License
 

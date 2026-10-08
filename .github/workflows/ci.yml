@@ -128,6 +128,16 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/check-conformance-artifact.py --self-test 2>&1 | tee conformance-artifact-selftest.log
+      - name: "Harness tests and generated Python artifact guard"
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_*.py'
+          if git ls-files | python3 -c 'import sys; sys.exit(any("__pycache__/" in p or p.endswith((".pyc", ".pyo")) for p in sys.stdin))'; then
+            echo "no tracked Python bytecode"
+          else
+            echo "::error title=Tracked Python cache::remove generated Python bytecode/cache files from the index"
+            exit 1
+          fi
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
