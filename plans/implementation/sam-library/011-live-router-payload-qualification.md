@@ -88,12 +88,13 @@ remaining closure work is:
 | D2 and D3 payload/trust semantics | Receiver that exchanges exact payloads using each SAM datagram format; record D2 authenticated and D3 unverified source behavior | Open; no live payload evidence |
 | Shared STREAM and datagram child | Two SAM clients on the same router are sufficient; one creates the shared owner and the other connects to its Destination | Open; current attempt could not resolve generated peer identity |
 | Shared lifecycle | Observe child removal and owner teardown while the same-router SAM peer exercises the child | Open |
-| Router dialect disposition | Try PRIMARY and MASTER; explicit rejection may be `unsupported`, while timeout or missing identity remains `not_run` | i2pd explicitly rejected PRIMARY; MASTER still needs decisive evidence |
+| Shared dialect disposition on the selected router | Try PRIMARY and MASTER; a supported dialect must pass the shared payload checks, and the other may be `unsupported` only on explicit rejection | Java has not yet been rerun through the artifact lane; old i2pd observations are informational and do not require a second router |
 | Artifact and closure reconciliation | Validate artifacts, preserve commands and router/SAM versions, and reconcile M005/M006 additively | Open |
 
 The known-service option makes loopback STREAM evidence reproducible in the main
 conformance artifact. Full foundation closure still needs live datagram receivers and a peer
-SAM client for shared-session observation; neither requires a second router.
+SAM client for shared-session observation; both SAM clients can connect through the same
+router bridge, so this does not require a second router.
 
 ## Invariants
 

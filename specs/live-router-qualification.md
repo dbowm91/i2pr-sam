@@ -125,9 +125,10 @@ The remaining feature closure requires more than a known hostname:
 - Shared rows need a second SAM client on the same router to observe the shared owner's
   concrete Destination, receive STREAM/datagram child payloads, and exercise child removal
   and owner teardown. This is a same-router test, not a second-router test.
-- PRIMARY/MASTER outcomes must separate explicit rejection (`unsupported`) from timeout,
-  missing identity, or tunnel unavailability (`not_run`). Existing i2pd PRIMARY rejection
-  is a valid router verdict; i2pd MASTER timeout is not a verdict.
+- On the selected router, test PRIMARY and MASTER and use whichever supported dialect
+  passes the shared payload checks. An explicit rejection is `unsupported`; timeout,
+  missing identity, or tunnel unavailability is `not_run`. Existing i2pd observations are
+  useful history but do not make a second router implementation a closure prerequisite.
 
 Negotiated SAM 3.3 alone does not establish that each 3.3 capability works. The current
 official SAM reference describes the shared owner/subsession mechanism, notes that i2pd
