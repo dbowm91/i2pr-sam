@@ -104,9 +104,9 @@ Implemented today:
 
 The conditional closures are still material, and after M005/M006 they are material for one
 reason only: **no live Java I2P, i2pd, or i2pr payload row has ever passed.** The
-implementation host has no router binary, no container runtime access, and UDP egress
-restricted to port 53, which prevents SSU peering on random high ports and therefore
-prevents any router here from joining the network. Every protocol claim above is backed by
+implementation host has no provisioned router or reachable SAM bridge. An earlier UDP
+probe observed replies only on port 53, but its silence at unrelated endpoints cannot prove
+an egress policy; M012 made that probe advisory. Every protocol claim above is backed by
 deterministic mock evidence against the pinned specification, not by a live exchange.
 
 M011 carries that residual. Until it runs, strict foundation closure - and therefore M007
@@ -258,13 +258,15 @@ post-corrective foundation closure.
 
 ### 007 — C ABI and Python bindings
 
-Future, unplanned implementation handoff. Blocked on M006.
+Future, unplanned implementation handoff. Blocked on strict foundation closure (M011) and
+the now-closed M013 blocking-parity correction. Repository license selection remains a
+publication prerequisite.
 
 ### 008 — i2pr service-tunnel adapter
 
-Future, unplanned implementation handoff. Blocked on M006 plus a stable merged
-`i2pr-service-tunnels` integration revision; consumes the public policy/filter core and
-does not copy it.
+Future, unplanned implementation handoff. Blocked on strict foundation closure (M011) plus
+a stable merged `i2pr-service-tunnels` integration revision; consumes the public
+policy/filter core and does not copy it.
 
 ### 009 — Tunnel daemon and management API
 

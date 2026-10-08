@@ -16,6 +16,12 @@ Attempted 2026-10-07 by milestone 005 with the repository harness
 
 ## Why no live lane could start
 
+The UDP observation in this historical run records replies and non-replies at the named
+endpoints only. The conclusion below that port 53 was the sole permitted UDP egress was an
+unsupported inference and is superseded by M012. The only currently re-established blocker
+is the absence of provisioned routers and reachable SAM bridges, as recorded in the M012
+closure attempt.
+
 Two independent environment prerequisites failed. Neither is a router protocol failure,
 and neither may be recorded as one.
 

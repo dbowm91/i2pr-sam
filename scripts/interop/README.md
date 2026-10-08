@@ -134,13 +134,10 @@ capability pass.
 
 ### Artifact validation
 
-When `scripts/check-conformance-artifact.py` exists, `qualify.py` shells out to
-it for each artifact and records its exit status as `artifact_schema_invalid` when
-non-zero. **That file does not exist yet in this repository**, so runs today use
-the built-in fallback: a minimal structural check that the artifact is a JSON
-object with `schema_version` `1.1`, a non-empty `rows` list where every row has a
-string `feature` and a `result` from the allowed set, and a `summary` object.
-That fallback verifies shape only — it is not a substitute for schema validation.
+`qualify.py` shells out to `scripts/check-conformance-artifact.py` for each artifact and
+records its exit status as `artifact_schema_invalid` when non-zero. The validator checks
+the schema and rejects a `pass` row without payload evidence. The built-in minimal
+structural fallback is used only if that script is unavailable.
 
 ## Diagnostic categories
 
@@ -181,7 +178,12 @@ environment fact, not a router compatibility verdict. Repeat the commands in a
 router-enabled environment before claiming interoperability. `routers.json` marks
 each entry `"verified_here": false` for the same reason; the recorded
 `pinned_revision` values are source pins from `git ls-remote`, not evidence of
-execution.
+ execution.
+
+The checked-in 2026-10-07 conformance observations and M005/M006 closure artifacts are
+historical outputs. Their `provisioning_udp_egress_blocked` classification came from the
+old unsound probe interpretation and is superseded by M012; it is not a current hard
+prerequisite verdict.
 
 `i2pr` is qualified only through its own SAM bridge on the configured endpoint.
 The harness never claims the router ran from inside this repository.
