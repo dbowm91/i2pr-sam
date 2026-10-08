@@ -167,3 +167,28 @@ attempt, so no live payload row ran and M011 remains open. The official
 [SAM v3 reference](https://i2p.net/en/docs/api/samv3/) documents shared subsessions as
 using one Destination/tunnel set, and notes that i2pd calls the dialect MASTER; these facts
 support the single-router test topology but do not replace runtime evidence.
+
+## 2026-10-08 — router startup retry
+
+The system i2pd 2.49.0 package started from a fresh home directory and opened SAM, but
+crashed with `malloc(): corrupted top size` while a transient SAM STREAM Destination was
+being created. I retried using the already-built pinned i2pd `2.61.0-739-gd147bb0f`
+(`d147bb0fd6789c75dc1c4d70c4f79b151a552d53`) in an isolated home data directory. It remains
+running with SAM on `127.0.0.1:17656` and negotiated SAM 3.3.
+
+The same-router qualification command was:
+
+```bash
+python3 scripts/interop/qualify.py --router i2pd \
+  --endpoint 127.0.0.1:17656 --peer-endpoint 127.0.0.1:17656 \
+  --plan stream --skip-udp-probe --timeout 120 \
+  --artifact-dir /tmp/m011-retry-pinned-stream \
+  --matrix-out /tmp/m011-retry-pinned-stream/matrix.csv
+```
+
+The bridge and artifact schema checks passed, but the STREAM row was `not_run` with
+`router_timeout` during connecting-session creation, before payload exchange. The validated
+artifact and matrix are in
+[`artifacts/interop/m011-2026-10-08/i2pd-retry-pinned-stream/`](../artifacts/interop/m011-2026-10-08/i2pd-retry-pinned-stream/).
+This retry shows the router process was not being held off by another agent; it does not
+provide a live payload pass or close M011.

@@ -1,0 +1,53 @@
+{
+  "capabilities": {
+    "datagram": "unknown",
+    "datagram2": "unknown",
+    "datagram3": "unknown",
+    "datagram_direct": "unknown",
+    "raw": "unknown",
+    "raw_direct": "unknown",
+    "session_identity_lookup": "unknown",
+    "shared_master": "unknown",
+    "shared_primary": "unknown",
+    "stream": "supported"
+  },
+  "endpoint": "127.0.0.1:17656",
+  "generated_at": "2026-10-08T10:31:48Z",
+  "local_identity": null,
+  "negotiated_sam_version": "3.3",
+  "peer_endpoint": "127.0.0.1:17656",
+  "peer_router": null,
+  "peer_router_version_or_sha": null,
+  "plan": "stream",
+  "router": "i2pd",
+  "router_version_or_sha": "d147bb0fd6789c75dc1c4d70c4f79b151a552d53",
+  "rows": [
+    {
+      "diagnostic_category": "router_timeout",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": false
+      },
+      "feature": "stream",
+      "local_identity": null,
+      "notes": "connecting side",
+      "operation": "stream_payload_bidirectional",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    }
+  ],
+  "schema_version": "1.1",
+  "summary": {
+    "capability_passes": 0,
+    "create_only": 0,
+    "fail": 0,
+    "not_run": 1,
+    "pass": 0,
+    "unsupported": 0
+  }
+}
