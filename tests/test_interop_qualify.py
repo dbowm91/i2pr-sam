@@ -81,11 +81,12 @@ class QualificationHarnessTests(unittest.TestCase):
         listener.bind(("127.0.0.1", 0))
         listener.listen()
         endpoint = f"127.0.0.1:{listener.getsockname()[1]}"
+        received: list[bytes] = []
 
         def serve() -> None:
             conn, _ = listener.accept()
             with conn:
-                conn.recv(512)
+                received.append(conn.recv(512))
                 conn.sendall(b"HELLO REPLY RESULT=OK VERSION=3.3\n")
             listener.close()
 
@@ -94,6 +95,7 @@ class QualificationHarnessTests(unittest.TestCase):
         self.assertEqual(qualify.probe_bridge(endpoint, 1)["blocking"], "false")
         thread.join(timeout=2)
         self.assertFalse(thread.is_alive())
+        self.assertEqual(received, [b"HELLO VERSION MIN=3.0 MAX=3.3\n"])
         self.assertEqual(qualify.probe_bridge("127.0.0.1:1", 0.1)["blocking"], "true")
 
     def test_missing_binary_blocks_non_bridge_only_router(self) -> None:

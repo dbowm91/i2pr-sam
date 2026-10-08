@@ -269,7 +269,7 @@ def probe_bridge(endpoint: str, timeout: float) -> dict[str, str]:
     try:
         with socket.create_connection((host, int(port)), timeout=timeout) as sock:
             sock.settimeout(timeout)
-            sock.sendall(b"HELLO VERSION=3.3 MIN=3.0 MAX=3.3\n")
+            sock.sendall(b"HELLO VERSION MIN=3.0 MAX=3.3\n")
             data = sock.recv(512)
     except (OSError, ValueError) as error:
         return _diag(DIAG_BRIDGE_UNREACHABLE, f"SAM bridge handshake failed on {endpoint}: {type(error).__name__}: {error}", blocking=True)

@@ -513,6 +513,16 @@ async fn stream_row(
 }
 
 /// Datagram row for one ordinary style, over the requested transport.
+fn datagram_feature(style: SessionStyle) -> &'static str {
+    match style {
+        SessionStyle::Stream => "stream",
+        SessionStyle::Datagram => "datagram",
+        SessionStyle::Raw => "raw",
+        SessionStyle::Datagram2 => "datagram2",
+        SessionStyle::Datagram3 => "datagram3",
+    }
+}
+
 async fn datagram_row(
     options: &Options,
     client: &SamClient,
@@ -523,11 +533,7 @@ async fn datagram_row(
     peer_identity: Option<&i2pr_sam::SessionIdentity>,
 ) -> Row {
     let mut row = Row::structural(
-        match style {
-            SessionStyle::Datagram => "datagram",
-            SessionStyle::Raw => "raw",
-            other => unreachable!("{other:?} is not an ordinary datagram style"),
-        },
+        datagram_feature(style),
         match (style, transport) {
             (_, DatagramTransport::UdpForward) => "datagram_payload_exchange_udp_forward",
             (_, DatagramTransport::ControlSocketV1) => "datagram_payload_exchange_control_socket",
@@ -932,11 +938,7 @@ async fn run() -> Result<ExitCode, (u8, String)> {
                     .await
                 }
                 None => Row::structural(
-                    match style {
-                        SessionStyle::Datagram => "datagram",
-                        SessionStyle::Raw => "raw",
-                        _ => "datagram",
-                    },
+                    datagram_feature(style),
                     match (style, transport) {
                         (_, DatagramTransport::UdpForward) => "datagram_payload_exchange_udp_forward",
                         (_, DatagramTransport::ControlSocketV1) => {
@@ -1046,4 +1048,19 @@ async fn run() -> Result<ExitCode, (u8, String)> {
         return Ok(ExitCode::from(1));
     }
     Ok(ExitCode::from(0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::datagram_feature;
+    use i2pr_sam::SessionStyle;
+
+    #[test]
+    fn every_datagram_family_has_a_runner_feature_label() {
+        assert_eq!(datagram_feature(SessionStyle::Stream), "stream");
+        assert_eq!(datagram_feature(SessionStyle::Datagram), "datagram");
+        assert_eq!(datagram_feature(SessionStyle::Raw), "raw");
+        assert_eq!(datagram_feature(SessionStyle::Datagram2), "datagram2");
+        assert_eq!(datagram_feature(SessionStyle::Datagram3), "datagram3");
+    }
 }

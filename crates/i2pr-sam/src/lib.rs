@@ -660,8 +660,7 @@ impl SamClient {
         reply: &Line,
         slot: impl Fn(&mut SamCapabilities) -> &mut Support,
     ) {
-        let result = i2pr_sam_proto::SamResult::parse(reply.field("RESULT").unwrap_or(""));
-        if result.is_unsupported_style() {
+        if unsupported_style_reply(reply) {
             self.mark(slot, Support::Unsupported).await;
         }
     }
@@ -1455,8 +1454,7 @@ impl SharedSession {
             )
             .await?;
         if result.field("RESULT") != Some("OK") {
-            let observed = i2pr_sam_proto::SamResult::parse(result.field("RESULT").unwrap_or(""));
-            if observed.is_unsupported_style() {
+            if unsupported_style_reply(&result) {
                 let mut capabilities = self.capabilities.write().await;
                 match style {
                     SessionStyle::Datagram2 => capabilities.datagram2 = Support::Unsupported,
@@ -1836,10 +1834,22 @@ fn ensure_ok(reply: &Line) -> Result<(), SamError> {
 /// than a transient failure, and retrying it as transport trouble would be wrong.
 fn rejection(reply: &Line) -> SamError {
     let result = i2pr_sam_proto::SamResult::parse(reply.field("RESULT").unwrap_or(""));
-    if result.is_unsupported_style() {
+    if unsupported_style_reply(reply) {
         return SamError::Unsupported(result_name(&result).to_owned());
     }
     SamError::Rejected(reply.field("RESULT").unwrap_or("unknown").to_owned())
+}
+
+/// Some routers report an explicitly unknown session style using their generic error
+/// result. Preserve that router verdict without treating other I2P_ERROR replies as support
+/// information.
+fn unsupported_style_reply(reply: &Line) -> bool {
+    let result = i2pr_sam_proto::SamResult::parse(reply.field("RESULT").unwrap_or(""));
+    result.is_unsupported_style()
+        || (matches!(result, i2pr_sam_proto::SamResult::I2pError)
+            && reply
+                .field("MESSAGE")
+                .is_some_and(|message| message.eq_ignore_ascii_case("Unknown STYLE")))
 }
 
 fn result_name(result: &i2pr_sam_proto::SamResult) -> &'static str {

@@ -160,6 +160,39 @@ async fn l_invalid_style_is_unsupported_and_cant_reach_peer_stays_rejected() {
     bridge.assert_scripts_clean();
 }
 
+#[tokio::test]
+async fn i2pd_unknown_style_message_is_an_explicit_unsupported_verdict() {
+    let bridge = support::MockBridge::start_with(vec![
+        utility_script(),
+        vec![
+            Rule::line(Match::starts_with("HELLO VERSION"), HELLO_REPLY),
+            Rule::line(
+                Match::starts_with("SESSION CREATE"),
+                "SESSION STATUS RESULT=I2P_ERROR MESSAGE=\"Unknown STYLE\"\n",
+            ),
+        ],
+    ])
+    .await;
+    let client = i2pr_sam::SamClient::connect(bridge.client_config())
+        .await
+        .unwrap();
+    let outcome = client
+        .create_shared_session(
+            &i2pr_sam::SessionDestination::Transient,
+            "primary",
+            i2pr_sam_proto::SharedDialect::Primary,
+            &[],
+        )
+        .await;
+    let error = outcome.err().expect("the mock router rejects this dialect");
+    assert!(matches!(error, i2pr_sam::SamError::Unsupported(_)));
+    assert_eq!(
+        client.capabilities().await.shared_primary,
+        Support::Unsupported
+    );
+    bridge.assert_scripts_clean();
+}
+
 /// L: support for STREAM must come from a successful session, not from the handshake.
 ///
 /// This is the strict form of the invariant. The handshake negotiates 3.3 and says nothing
