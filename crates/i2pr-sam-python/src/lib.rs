@@ -74,6 +74,14 @@ mod tests {
                 "NAMING REPLY RESULT=OK NAME=example.i2p VALUE=peer-destination"
             )
             .unwrap();
+            line.clear();
+            reader.read_line(&mut line).unwrap();
+            assert!(line.starts_with("DEST GENERATE SIGNATURE_TYPE="));
+            writeln!(
+                reader.get_mut(),
+                "DEST REPLY PUB=public-destination PRIV=private-destination"
+            )
+            .unwrap();
         });
 
         Python::with_gil(|py| {
@@ -90,6 +98,15 @@ mod tests {
                 .extract()
                 .unwrap();
             assert_eq!(value, "peer-destination");
+            let generated: (String, String) = client
+                .call_method0("generate_destination")
+                .unwrap()
+                .extract()
+                .unwrap();
+            assert_eq!(
+                generated,
+                ("public-destination".into(), "private-destination".into())
+            );
             let bad_endpoint = module
                 .getattr("Client")
                 .unwrap()

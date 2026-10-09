@@ -224,6 +224,14 @@ mod tests {
                 "NAMING REPLY RESULT=OK NAME=example.i2p VALUE=peer-destination"
             )
             .unwrap();
+            line.clear();
+            reader.read_line(&mut line).unwrap();
+            assert!(line.starts_with("DEST GENERATE SIGNATURE_TYPE="));
+            writeln!(
+                reader.get_mut(),
+                "DEST REPLY PUB=public-destination PRIV=private-destination"
+            )
+            .unwrap();
         });
 
         let endpoint = addr.to_string();
@@ -251,6 +259,27 @@ mod tests {
             0
         );
         assert_eq!(&output[..output_len], b"peer-destination");
+        let mut public = [0_u8; 64];
+        let mut secret = [0_u8; 64];
+        let mut public_len = 0;
+        let mut secret_len = 0;
+        // SAFETY: all output pointers refer to distinct, writable caller-owned storage.
+        assert_eq!(
+            unsafe {
+                i2pr_sam_generate_destination(
+                    handle,
+                    public.as_mut_ptr(),
+                    public.len(),
+                    &mut public_len,
+                    secret.as_mut_ptr(),
+                    secret.len(),
+                    &mut secret_len,
+                )
+            },
+            0
+        );
+        assert_eq!(&public[..public_len], b"public-destination");
+        assert_eq!(&secret[..secret_len], b"private-destination");
         assert_eq!(i2pr_sam_close(handle), 0);
         assert_eq!(i2pr_sam_close(handle), 1);
         server.join().unwrap();
