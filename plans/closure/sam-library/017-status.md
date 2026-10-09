@@ -154,6 +154,13 @@ No branch with unique commits was deleted.
   `i2pr-service-tunnels` integration revision consumable from i2pr (i2pr Plan 379
   closed on its work branch with the current public consumer contract, but this
   repository must consume a stable selected revision at implementation time).
+  > Amendment 2026-10-09 (additive; no M017 conclusion changed): upstream i2pr
+  > Plan 379 has since been verified **passed and merged to `main`** via
+  > `dbowm91/i2pr` PR #36 (merge `e13546b`, 2026-10-07). The upstream gate is
+  > therefore satisfied; the remaining step is this repository's own revision
+  > selection at M008 planning time. Recommended pin: `f0fb74a8` (the revision
+  > upstream's `tests/portable-service-tunnel-consumer-current/` fixture proves
+  > reachable from outside the workspace).
 - **M009/M010**: remain transitively blocked on M008.
 - Broader i2pd/i2pr/multi-router compatibility hardening: future maturity work,
   not a reason to reopen this foundation closure.

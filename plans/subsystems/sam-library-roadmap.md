@@ -267,9 +267,12 @@ Repository license selection remains a publication prerequisite.
 ### 008 — i2pr service-tunnel adapter
 
 Future, unplanned implementation handoff. Foundation prerequisites are satisfied
-(M011 strict live closure and M017 merged to `main`); remaining blocker is a stable
-merged `i2pr-service-tunnels` integration revision; consumes the public
-policy/filter core and does not copy it.
+(M011 strict live closure and M017 merged to `main`); upstream i2pr Plan 379 has
+passed and merged to `main` (`dbowm91/i2pr` PR #36, merge `e13546b`, 2026-10-07),
+so the remaining step is selecting and pinning the `i2pr-service-tunnels`
+revision at planning time (recommended: `f0fb74a8`, proven reachable by upstream's
+current external-consumer fixture); consumes the public policy/filter core and
+does not copy it.
 
 ### 009 — Tunnel daemon and management API
 
@@ -408,8 +411,8 @@ Bindings, service-tunnel adapter, tunnel manager, and UI are not required for th
 | 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | `plans/closure/sam-library/004-status.md` | corrected by 005/006 |
 | 005 | conditionally closed | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | `plans/closure/sam-library/005-status.md` | live payload matrix → 011 |
 | 006 | conditionally closed | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | `plans/closure/sam-library/006-status.md` | 005 strict closure → 011 |
-| 007 | proposed | — | — | 011 strict closure + 013 |
-| 008 | proposed | — | — | 011 strict closure + 013 + stable merged i2pr portable-core revision |
+| 007 | proposed | — | — | prerequisites satisfied (M011/M013 closed, M017 merged); ready to plan |
+| 008 | proposed | — | — | ready to plan with pinned i2pr revision (recommended `f0fb74a8`; upstream Plan 379 merged `e13546b`) |
 | 009 | proposed | — | — | 008 |
 | 010 | proposed | — | — | 009 |
 | 011 | closed | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | `plans/closure/sam-library/011-status.md` | — |
