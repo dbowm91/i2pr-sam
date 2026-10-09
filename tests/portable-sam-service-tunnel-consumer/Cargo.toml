@@ -1,0 +1,9 @@
+[package]
+name = "portable-sam-service-tunnel-consumer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+i2pr-sam-service-tunnels = { path = "../../crates/i2pr-sam-service-tunnels" }
+
+[workspace]

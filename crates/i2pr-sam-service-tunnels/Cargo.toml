@@ -1,0 +1,19 @@
+[package]
+name = "i2pr-sam-service-tunnels"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "SAM STREAM adapter for the public i2pr service-tunnel policy core"
+
+[dependencies]
+i2pr-sam = { path = "../i2pr-sam" }
+i2pr-sam-proto = { path = "../i2pr-sam-proto" }
+i2pr-service-tunnels = { git = "https://github.com/dbowm91/i2pr.git", rev = "f0fb74a8582d6077a7c5db49d613699688115bad" }
+thiserror = "2"
+tokio = { version = "1", features = ["io-util", "net", "time"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+
+[lints]
+workspace = true

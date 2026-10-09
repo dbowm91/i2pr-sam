@@ -87,6 +87,10 @@ and re-verified by Milestone 005; see
 - `i2pr-sam-ffi` and `i2pr-sam-python` provide early C and Python wrappers over that
   blocking facade. Their initial surface covers connection, name lookup, and explicit
   Destination generation; see [`docs/foreign-bindings.md`](docs/foreign-bindings.md).
+- `i2pr-sam-service-tunnels` adapts the pinned public i2pr service-tunnel core to SAM
+  STREAM sessions for GenericClient, GenericServer, and HttpServer profiles. Its current
+  supported subset, identity-store seam, and forwarding limits are documented in
+  [`docs/service-tunnel-adapter.md`](docs/service-tunnel-adapter.md).
 
 The implementation is pre-1.0 and not published. Use the async or blocking crate for
 application code; see [`docs/client-usage.md`](docs/client-usage.md) for examples and
