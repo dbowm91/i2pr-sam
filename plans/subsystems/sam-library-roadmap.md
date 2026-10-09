@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: M017 closing — reconciliation landed and CI-green at `28ee079`; PR #2 open as the merge vehicle; merge, post-merge CI, closure, and branch cleanup remain. M011 closed (Java I2P full live matrix 11/11); M005 and M006 retain their historical conditional closures with the live-payload residual satisfied; M012–M016 are closed.
+Status: M017 closed — foundation reconciled and merged to `main` via PR #2 (`46d06ea`); post-merge `main` CI green; superseded planning branches deleted. M011 closed (Java I2P full live matrix 11/11); M005 and M006 retain their historical conditional closures with the live-payload residual satisfied; M012–M016 are closed. Strict foundation authority is on `main`.
 
 Long-term references:
 
@@ -259,14 +259,16 @@ post-corrective foundation closure.
 
 ### 007 — C ABI and Python bindings
 
-Future, unplanned implementation handoff. Blocked on strict foundation closure (M011) and
-the now-closed M013 blocking-parity correction. Repository license selection remains a
-publication prerequisite.
+Future, unplanned implementation handoff. Foundation prerequisites are satisfied
+(M011 strict live closure, M013 blocking-parity closure, and M017 merged to `main`);
+implementation planning may proceed against the merged pre-1.0 foundation.
+Repository license selection remains a publication prerequisite.
 
 ### 008 — i2pr service-tunnel adapter
 
-Future, unplanned implementation handoff. Blocked on strict foundation closure (M011) plus
-a stable merged `i2pr-service-tunnels` integration revision; consumes the public
+Future, unplanned implementation handoff. Foundation prerequisites are satisfied
+(M011 strict live closure and M017 merged to `main`); remaining blocker is a stable
+merged `i2pr-service-tunnels` integration revision; consumes the public
 policy/filter core and does not copy it.
 
 ### 009 — Tunnel daemon and management API
@@ -394,7 +396,7 @@ the sole remaining foundation gate. Java SAM HTTP STREAM to a local server tunne
 DATAGRAM/RAW/shared payload evidence passed on the same router. **M011 is closed**; see
 `plans/closure/sam-library/011-status.md`.
 
-Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 must first reconcile evidence, obtain exact-head CI, merge the complete foundation to `main`, and retire stale branch/PR authority before downstream implementation begins.
+Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 reconciled evidence, obtained exact-head CI, merged the complete foundation to `main` (PR #2, `46d06ea`), and retired stale branch/PR authority; see `plans/closure/sam-library/017-status.md`. Downstream M007 implementation planning may now proceed against `main`.
 
 ## 12. Milestone status
 
@@ -416,4 +418,4 @@ Bindings, service-tunnel adapter, tunnel manager, and UI are not required for th
 | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | `plans/closure/sam-library/014-status.md` | — |
 | 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | `plans/closure/sam-library/015-status.md` | — |
 | 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | `plans/closure/sam-library/016-status.md` | — |
-| 017 | closing | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | — | reconciliation landed CI-green (`28ee079`); final PR/merge + post-merge CI + closure + branch cleanup remain |
+| 017 | closed | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | `plans/closure/sam-library/017-status.md` | merged to `main` via PR #2; branches retired |

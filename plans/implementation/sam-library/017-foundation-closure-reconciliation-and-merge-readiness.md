@@ -2,7 +2,9 @@
 
 Class: closure + reconciliation + repository hygiene.
 
-Status: **ready**.
+Status: **closed** — see `plans/closure/sam-library/017-status.md`. Merged to `main`
+via PR #2 (`46d06ea`); post-merge `main` CI green; superseded branches deleted.
+The registration narrative below is preserved as history.
 
 Repository baseline: `de6bd3258105e6694ded1fdc5ef81abccd2d02fe` on
 `plans/012-013-foundation-qualification-correctives`.

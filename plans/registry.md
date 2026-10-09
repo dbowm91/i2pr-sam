@@ -27,13 +27,11 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | closing (reconciliation landed; merge + closure pending) | `plans/subsystems/sam-library-roadmap.md` | M017 closing: reconciliation commit `28ee079` CI-green at exact head; PR #2 open; merge/post-merge CI/closure/branch cleanup remain | M011 Java I2P matrix passed 11/11 and M012–M016 are closed; README/conformance summary/M011 metadata/API blocking CI reconciled. Stale PR #1 superseded by PR #2, pending close without merge. |
+| SAM library foundation | strict foundation authority on main (M017 closed) | `plans/subsystems/sam-library-roadmap.md` | M017 closed: reconciliation merged via PR #2 (`46d06ea`); post-merge `main` CI green; superseded branches deleted | M001 closed; M002–M006 retain historical conditional closure, residual live-payload condition satisfied by M011. M011–M016 closed. M007 unblocked for implementation planning; M008 still blocked on a stable merged `i2pr-service-tunnels` revision. |
 
 ## Dependency-ready implementation plans
 
-| Subsystem | Milestone | State | Handoff | Dependencies |
-|---|---:|---|---|---|
-| SAM library | 017 | **closing** | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | M011–M016 closed; no protocol dependency |
+(none — all implementation plans are closed; future work is roadmap-only.)
 
 ## Closed implementation plans
 
@@ -51,7 +49,7 @@ Canonical direction:
 | SAM library | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | — |
 | SAM library | 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | — |
 | SAM library | 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | — |
-| SAM library | 017 | **closing** | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | Merge/post-merge CI/closure/branch cleanup remain; PR #2 is the merge vehicle |
+| SAM library | 017 | closed | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | `plans/closure/sam-library/017-status.md` |
 
 Closure evidence is under `plans/closure/sam-library/`.
 
@@ -60,8 +58,8 @@ Closure evidence is under `plans/closure/sam-library/`.
 The canonical phase ordering is unchanged, but subsystem-local future milestone numbers
 shifted to make room for the two corrective gates discovered by M002–M004 closure review.
 
-- M007 C ABI + Python bindings — M011/M013 technical prerequisites are satisfied but implementation remains gated on M017 merging the foundation to `main`. Repository license selection is required before public package distribution, not before pre-1.0 implementation.
-- M008 i2pr service-tunnel adapter — additionally gated on M017 and a stable merged
+- M007 C ABI + Python bindings — M011/M013 technical prerequisites satisfied and M017 merged to `main`; implementation planning may proceed against the merged pre-1.0 Rust foundation. Repository license selection is required before public package distribution, not before pre-1.0 implementation.
+- M008 i2pr service-tunnel adapter — still blocked on a stable merged
   `i2pr-service-tunnels` integration revision. i2pr Plan 379 has closed on its work
   branch with the current public consumer contract, but this repository must consume a
   stable selected revision at implementation time.
@@ -75,6 +73,6 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
 
 ## Active sequence
 
-`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(closed: Java I2P 11/11 live payload pass) -> 017(closing reconciliation/merge) -> strict foundation authority on main`
+`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(closed: Java I2P 11/11 live payload pass) -> 017(closed reconciliation/merge) -> strict foundation authority on main`
 
-Bindings and the service-tunnel adapter remain not implementation-ready until M017 closes on `main`. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 closed the foundation gate: the known-service HTTP STREAM lane passes with response status/body evidence, and same-router sender/receiver sessions pass every datagram and shared child row. A second router implementation, external datagram service, or cross-router tunnel is not required by the amended M011 basis.
+Bindings implementation planning is unblocked on the merged foundation (M007); the service-tunnel adapter remains blocked on a stable merged `i2pr-service-tunnels` revision (M008). M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 closed the foundation gate: the known-service HTTP STREAM lane passes with response status/body evidence, and same-router sender/receiver sessions pass every datagram and shared child row. A second router implementation, external datagram service, or cross-router tunnel is not required by the amended M011 basis.
