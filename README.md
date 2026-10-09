@@ -1,5 +1,125 @@
 # i2pr-sam
 
-Clean-room Rust SAM client and tunnel-management toolkit for I2P.
+`i2pr-sam` is a clean-room Rust SAM client and tunnel-management toolkit for I2P.
 
-Initial planning is being established before implementation begins.
+The project is intentionally separate from the `dbowm91/i2pr` router. i2pr owns a SAM
+**server** adapter over its router services; this repository owns the reusable SAM
+**client** side: wire protocol/state, client sessions, router interoperability, language
+bindings, and eventually a standalone tunnel manager/daemon.
+
+Current status: **pre-1.0 implementation foundation, closed**. The protocol
+codec, async client, blocking facade, both datagram transports, concrete shared-session
+identity, the conformance runner, the interop harness, and hosted CI are implemented
+and merged to `main`.
+
+The final Java I2P live matrix passes 11/11 with zero failures and zero `not_run`
+rows (SAM 3.3, router `2.13.1-1~ubuntu4`): one known-service HTTP STREAM row
+(`200 OK`, 1,186 response bytes / 998 body bytes), DATAGRAM and RAW over both
+UDP forwarding and control-socket modes, DATAGRAM2, DATAGRAM3 with unverified-source
+typing, and PRIMARY + MASTER shared STREAM/DATAGRAM child rows each proving one
+owner Destination with child removal and owner-teardown invalidation. Evidence:
+`artifacts/interop/m011-2026-10-08/java-i2p-conformance.json` and
+`java-i2p-matrix.csv`, summarized in `specs/conformance-observations.csv`.
+
+i2pd produced useful compatibility evidence (HELLO/SAM 3.3 session setup,
+`NAMING LOOKUP NAME=ME` identity, explicit `Unknown STYLE` rejection of PRIMARY)
+but no successful payload row; its leg remains router-blocked/incomplete and is not
+a closure prerequisite. i2pr was not live-qualified by this repository and carries
+no interoperability claim. No cross-router or multi-router interoperability is
+claimed: qualification is single-router Java I2P. UDP probe silence at arbitrary
+endpoints is inconclusive and is not used to infer an egress policy.
+Milestones 001 and 011–016 are closed; 002–006 retain their historical conditional
+closures with the live-payload residual satisfied by M011. See
+`plans/closure/sam-library/` and `specs/live-router-qualification.md` for the
+results.
+
+## Target shape
+
+The intended architecture is layered:
+
+- a runtime-neutral SAM protocol/state-machine crate;
+- a canonical async Rust client;
+- a blocking Rust facade;
+- C ABI and Python bindings;
+- a service-tunnel adapter consuming the public `i2pr-service-tunnels` policy core;
+- a standalone tunnel manager/daemon with configuration and management surfaces.
+
+The first implementation line is deliberately narrower than that end state. See
+[`plans/registry.md`](plans/registry.md) and
+[`plans/subsystems/sam-library-roadmap.md`](plans/subsystems/sam-library-roadmap.md).
+
+## Protocol scope
+
+The long-term target is current SAM v3 behavior, including STREAM, legacy DATAGRAM,
+RAW, DATAGRAM2, DATAGRAM3, and shared-Destination PRIMARY/MASTER session semantics.
+Version negotiation alone is not treated as a capability guarantee; deployed routers
+differ in which 3.x features they implement.
+
+## Clean-room policy
+
+Protocol behavior is derived from published I2P specifications and independently
+observed interoperability. Existing SAM libraries and router implementations may be
+used as behavioral/reference oracles, not copied as source.
+
+The initial reference set includes:
+
+- official SAM v3 documentation: <https://geti2p.net/en/docs/api/samv3>
+- Java I2P;
+- i2pd;
+- I2P+ where useful for deployed-compatibility checks;
+- i2pr;
+- `go-i2p/go-sam-go`, `yosemite`, `go-i2p/sam3`, and `sam-forwarder` as
+  API/behavior references only.
+
+The exact pinned revisions used for implementation evidence are frozen by Milestone 001
+and re-verified by Milestone 005; see
+[`specs/references/sam-v3-reference-freeze.md`](specs/references/sam-v3-reference-freeze.md).
+
+## Workspace crates
+
+- `i2pr-sam-proto` contains bounded runtime-neutral SAM syntax, typed protocol values,
+  state legality, capabilities, and distinct authenticated/unverified/raw datagram types.
+- `i2pr-sam` is the canonical Tokio async client for HELLO, Destination generation,
+  naming, STREAM, both datagram transports (UDP forwarding and the v1/v2-compatible
+  control socket), and shared-owner child lifecycle with concrete Destination identity.
+- `i2pr-sam-blocking` is a synchronous facade over the async crate. Calls made from an
+  existing Tokio runtime return a typed `NestedRuntime` error.
+
+The implementation is pre-1.0 and not published. Use the async or blocking crate for
+application code; see [`docs/client-usage.md`](docs/client-usage.md) for examples and
+lifecycle limits and [`docs/api-migration.md`](docs/api-migration.md) for the API changes
+made by the two most recent milestones.
+
+## Verification
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --locked --workspace
+python3 scripts/check-proto-boundary.py --self-test
+python3 scripts/check-api-snapshot.py --self-test
+python3 scripts/check-conformance-artifact.py --self-test
+```
+
+Hosted CI lanes run on Linux stable, Linux MSRV 1.89, macOS, and Windows. Live router
+qualification runs locally or on an operator-provisioned host:
+
+```bash
+python3 scripts/interop/udp_egress_probe.py
+python3 scripts/interop/qualify.py --all --peer-endpoint 127.0.0.1:7657
+```
+
+The qualification runner's `--control-timeout` defaults to 120 seconds per SAM command.
+`SESSION CREATE` can wait for tunnel construction; this timeout is separate from the
+runner's overall `--timeout`.
+
+The UDP probe is advisory: a reply proves one request/reply path works, while silence is
+`unknown`. Qualification proceeds to the configured SAM bridge regardless. There is no
+GitHub live-interoperability workflow because this repository has no registered self-hosted
+Actions runner. Run locally or on an operator-provisioned host that can reach both bridge
+endpoints; pass `--peer-endpoint HOST:PORT` for payload exchange.
+
+## License
+
+No repository license has been selected yet. Do not copy source from reference
+implementations. A license must be selected before public package distribution.

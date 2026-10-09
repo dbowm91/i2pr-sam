@@ -1,0 +1,20 @@
+# Synthetic manifest for the protocol boundary guard self-test.
+#
+# Mutation template: a forbidden dependency hidden behind a renamed `package`
+# key. The self-test rewrites the quoted package value below for each forbidden
+# dependency name.
+
+[package]
+name = "i2pr-sam-proto-fixture"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Fixture manifest that renames a runtime dependency"
+
+[dependencies]
+i2pr-runtime-alias = { package = "tokio", version = "1" }
+
+[dev-dependencies]
+
+[lints]
+workspace = true

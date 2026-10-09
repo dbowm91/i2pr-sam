@@ -1,0 +1,291 @@
+name: ci
+
+# Every action is pinned to a full-length commit SHA. Tags are mutable (a moved tag
+# silently changes what runs in CI), so pinning to a SHA is a supply-chain integrity
+# control: the exact bytes reviewed here are the bytes that execute. The trailing
+# comment records the human-readable version for reviewers.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Superseded runs are cancelled: a newer push to the same ref makes older CI output
+# irrelevant, and cancelling keeps runner minutes from being spent on dead heads.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      # rustfmt is the only component this lane needs; it never compiles, so no
+      # clippy/rust-src components and no cache are pulled in.
+      - name: Install rustfmt
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable (branch head; this repo publishes toolchain selectors as branches, not tags)
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: Check formatting
+        run: |
+          set -euo pipefail
+          cargo fmt --all -- --check
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable (branch head; toolchain selectors are branches in this repo)
+        with:
+          toolchain: stable
+          components: clippy
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - name: Clippy (deny warnings)
+        run: |
+          set -euo pipefail
+          cargo clippy --workspace --all-targets --all-features -- -D warnings 2>&1 | tee clippy.log
+      - name: Upload clippy log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: clippy-log
+          path: clippy.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  test-linux:
+    name: test-linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CARGO_TERM_COLOR: always
+      # Deterministic builds: no incremental artifacts, so a cached target dir can
+      # never produce a different result than a cold one.
+      CARGO_INCREMENTAL: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable (branch head; toolchain selectors are branches in this repo)
+        with:
+          toolchain: stable
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      # No router and no network beyond crates.io: every test under crates/*/tests is a
+      # deterministic mock-bridge test that binds ephemeral loopback ports. A live
+      # router is never contacted from this lane.
+      - name: Test (mock bridge, no router)
+        run: |
+          set -euo pipefail
+          cargo test --locked --workspace 2>&1 | tee cargo-test.log
+      - name: "Guard: protocol crate has no runtime dependencies"
+        run: |
+          set -euo pipefail
+          python3 scripts/check-proto-boundary.py 2>&1 | tee proto-boundary.log
+      - name: "Guard self-test: protocol boundary detector fires on synthetic violations"
+        run: |
+          set -euo pipefail
+          python3 scripts/check-proto-boundary.py --self-test 2>&1 | tee proto-boundary-selftest.log
+      - name: "Guard self-test: API snapshot detector fires on synthetic mutations"
+        run: |
+          set -euo pipefail
+          python3 scripts/check-api-snapshot.py --self-test 2>&1 | tee api-snapshot-selftest.log
+      # Required since M017: api/public-types.txt matches the 347-declaration current
+      # surface at the M017 head, so unregistered public API drift is a committed
+      # defect and fails CI.
+      - name: "Guard: API snapshot comparison vs api/public-types.txt"
+        run: |
+          set -euo pipefail
+          python3 scripts/check-api-snapshot.py 2>&1 | tee api-snapshot.log
+      - name: "Validator self-test: conformance artifact validator rejects overclaiming artifacts"
+        run: |
+          set -euo pipefail
+          python3 scripts/check-conformance-artifact.py --self-test 2>&1 | tee conformance-artifact-selftest.log
+      - name: "Harness tests and generated Python artifact guard"
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s tests -p 'test_*.py'
+          if git ls-files | python3 -c 'import sys; sys.exit(any("__pycache__/" in p or p.endswith((".pyc", ".pyo")) for p in sys.stdin))'; then
+            echo "no tracked Python bytecode"
+          else
+            echo "::error title=Tracked Python cache::remove generated Python bytecode/cache files from the index"
+            exit 1
+          fi
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-linux-logs
+          path: |
+            cargo-test.log
+            proto-boundary.log
+            proto-boundary-selftest.log
+            api-snapshot-selftest.log
+            api-snapshot.log
+            conformance-artifact-selftest.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  msrv:
+    name: msrv
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      # rust-version in the workspace manifest is 1.89; this lane pins that exact version.
+      - name: Install Rust 1.89.0
+        uses: dtolnay/rust-toolchain@166de8caa14bb03d0e4ce3de7cc787f95ccf7188 # 1.89.0 (branch head; toolchain selectors are branches in this repo)
+        with:
+          toolchain: 1.89.0
+      # A silently-upgraded MSRV lane proves nothing. Verify the resolved version before
+      # any build runs and fail loudly on a fallback to a newer compiler.
+      - name: Verify pinned toolchain (no silent fallback)
+        run: |
+          set -euo pipefail
+          rustc_actual="$(rustc --version)"
+          cargo_actual="$(cargo --version)"
+          echo "rustc: $rustc_actual"
+          echo "cargo: $cargo_actual"
+          case "$rustc_actual" in
+            "rustc 1.89."*) ;;
+            *)
+              echo "::error title=MSRV fallback::expected rustc 1.89.x, got: $rustc_actual"
+              exit 1
+              ;;
+          esac
+          case "$cargo_actual" in
+            "cargo 1.89.0 "*) ;;
+            *)
+              echo "::error title=MSRV fallback::expected cargo 1.89.0, got: $cargo_actual"
+              exit 1
+              ;;
+          esac
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - name: Build all targets
+        run: |
+          set -euo pipefail
+          cargo build --locked --workspace --all-targets 2>&1 | tee msrv-build.log
+      - name: Test (mock bridge, no router)
+        run: |
+          set -euo pipefail
+          cargo test --locked --workspace 2>&1 | tee msrv-test.log
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: msrv-logs
+          path: |
+            msrv-build.log
+            msrv-test.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  test-macos:
+    name: test-macos
+    runs-on: macos-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable (branch head; toolchain selectors are branches in this repo)
+        with:
+          toolchain: stable
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - name: Build all targets
+        run: |
+          set -euo pipefail
+          cargo build --locked --workspace --all-targets 2>&1 | tee macos-build.log
+      - name: Test (mock bridge, no router)
+        run: |
+          set -euo pipefail
+          cargo test --locked --workspace 2>&1 | tee macos-test.log
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-macos-logs
+          path: |
+            macos-build.log
+            macos-test.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  test-windows:
+    name: test-windows
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d # stable (branch head; toolchain selectors are branches in this repo)
+        with:
+          toolchain: stable
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      # Windows runners default to PowerShell, where `set -euo pipefail` is not valid.
+      # bash is available (and is what the piped-to-tee logging needs to fail correctly),
+      # so every run block on this job explicitly selects bash.
+      - name: Build all targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --locked --workspace --all-targets 2>&1 | tee windows-build.log
+      - name: Test (mock bridge, no router)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked --workspace 2>&1 | tee windows-test.log
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-windows-logs
+          path: |
+            windows-build.log
+            windows-test.log
+          if-no-files-found: warn
+          retention-days: 14

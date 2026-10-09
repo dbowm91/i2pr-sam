@@ -1,0 +1,70 @@
+{
+  "schema_note": "Declarative pins for router-enabled interoperability qualification. Values were observed with `git ls-remote <repo_url> HEAD`; they are source pins, not claims that any router was executed locally.",
+  "observed_at": "2026-10-07",
+  "default_plan": "full",
+  "routers": [
+    {
+      "label": "Java I2P",
+      "repo_url": "https://github.com/i2p/i2p.i2p.git",
+      "pinned_revision": "a629ec7c9c675dd252d005fb881efd92e8e6ba27",
+      "bridge_endpoint": "127.0.0.1:7656",
+      "udp_endpoint": "127.0.0.1:7655",
+      "binary": null,
+      "binary_probe": "bridge_only",
+      "provisioning": {
+        "install_hint": "Install from a release tarball or build with ant/maven per the project README; no single-binary invocation is assumed here.",
+        "start_commands": [
+          "cd /usr/local/i2p && ./i2prouter -sh"
+        ],
+        "verify_command": "ss -ltn | grep 7656",
+        "verified_here": false
+      },
+      "env": {
+        "I2P_DIR": "SAM bridge configuration lives in ${I2P_DIR}/router.config: sam.enabled=true, sam.port=7656, sam.bind.port=7655"
+      },
+      "notes": "Reference SAM v3 implementation. SAM must be enabled in router.config before the bridge listens. UDP egress is required for the router to join the network."
+    },
+    {
+      "label": "i2pd",
+      "repo_url": "https://github.com/PurpleI2P/i2pd.git",
+      "pinned_revision": "d147bb0fd6789c75dc1c4d70c4f79b151a552d53",
+      "bridge_endpoint": "127.0.0.1:7656",
+      "udp_endpoint": "127.0.0.1:7655",
+      "binary": "i2pd",
+      "binary_probe": "path",
+      "provisioning": {
+        "install_hint": "Build the pinned revision with cmake, or install a distribution package whose version matches the pin.",
+        "start_commands": [
+          "i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+        ],
+        "verify_command": "ss -ltn | grep 7656",
+        "verified_here": false
+      },
+      "env": {
+        "I2PD_DATA": "Router data directory; the SAM bridge is enabled by CLI flags above, not by an environment variable."
+      },
+      "notes": "Second independent implementation. i2pd retains the MASTER spelling for SAM 3.3 shared sessions; shared dialect selection stays explicit."
+    },
+    {
+      "label": "i2pr",
+      "repo_url": "https://github.com/dbowm91/i2pr.git",
+      "pinned_revision": "4f4e98f5a0241355af5099c73065088dede1b1de",
+      "bridge_endpoint": "127.0.0.1:7656",
+      "udp_endpoint": "127.0.0.1:7655",
+      "binary": "i2pr",
+      "binary_probe": "path",
+      "provisioning": {
+        "install_hint": "Build the pinned revision of the i2pr router from its own repository with cargo.",
+        "start_commands": [
+          "cargo run --release --bin i2pr"
+        ],
+        "verify_command": "ss -ltn | grep 7656",
+        "verified_here": false
+      },
+      "env": {
+        "I2PR_CONFIG": "SAM bridge listen address/port for the i2pr router; confirm the exact key against the pinned revision before use."
+      },
+      "notes": "The i2pr router is a separate upstream project from this client library. This harness only ever qualifies it through its own SAM bridge on the configured endpoint; it never claims the router was run from inside this repository."
+    }
+  ]
+}

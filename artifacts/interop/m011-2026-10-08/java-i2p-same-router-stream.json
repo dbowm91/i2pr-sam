@@ -1,0 +1,51 @@
+{
+  "capabilities": {
+    "datagram": "unknown",
+    "datagram2": "unknown",
+    "datagram3": "unknown",
+    "datagram_direct": "unknown",
+    "raw": "unknown",
+    "raw_direct": "unknown",
+    "session_identity_lookup": "unknown",
+    "shared_master": "unknown",
+    "shared_primary": "unknown",
+    "stream": "unknown"
+  },
+  "endpoint": "127.0.0.1:7656",
+  "generated_at": "2026-10-08T03:39:14Z",
+  "local_identity": null,
+  "negotiated_sam_version": "3.3",
+  "peer_endpoint": "127.0.0.1:7656",
+  "peer_router": null,
+  "peer_router_version_or_sha": null,
+  "plan": "stream",
+  "router": "Java I2P",
+  "router_version_or_sha": "a629ec7c9c675dd252d005fb881efd92e8e6ba27",
+  "rows": [
+    {
+      "diagnostic_category": "peer_identity_unavailable",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "feature": "stream",
+      "local_identity": null,
+      "notes": "peer Destination could not be resolved, so no payload exchange was attempted",
+      "operation": "stream_payload_bidirectional",
+      "peer_identity": null,
+      "result": "not_run",
+      "shared_dialect": null
+    }
+  ],
+  "schema_version": "1.1",
+  "summary": {
+    "capability_passes": 0,
+    "create_only": 0,
+    "fail": 0,
+    "not_run": 1,
+    "pass": 0,
+    "unsupported": 0
+  }
+}

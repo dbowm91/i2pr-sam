@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dbowm91/i2pr-sam/specs/conformance.schema.json",
+  "title": "SAM conformance artifact",
+  "description": "A conformance artifact records what a client actually did against a named router. A row may only be 'pass' when its operation-specific payload evidence passes validation; byte-exchange rows require exact agreement, while stream_http_service_request_response requires a nonempty HTTP 2xx response. 'create_only' records session creation without payload evidence and is never a capability pass.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "router",
+    "router_version_or_sha",
+    "endpoint",
+    "generated_at",
+    "plan",
+    "rows",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.1" },
+    "router": { "type": "string", "minLength": 1 },
+    "router_version_or_sha": { "type": "string", "minLength": 7 },
+    "endpoint": { "$ref": "#/$defs/endpoint" },
+    "peer_endpoint": {
+      "oneOf": [{ "$ref": "#/$defs/endpoint" }, { "type": "null" }]
+    },
+    "peer_router": { "type": ["string", "null"] },
+    "peer_router_version_or_sha": { "type": ["string", "null"] },
+    "negotiated_sam_version": {
+      "oneOf": [
+        { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        { "type": "null" }
+      ]
+    },
+    "generated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "plan": { "enum": ["full", "stream", "datagram", "shared"] },
+    "local_identity": { "$ref": "#/$defs/nullableIdentity" },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stream", "datagram", "raw", "datagram2", "datagram3", "shared_primary", "shared_master", "datagram_direct", "raw_direct", "session_identity_lookup"],
+      "properties": {
+        "stream": { "$ref": "#/$defs/support" },
+        "datagram": { "$ref": "#/$defs/support" },
+        "raw": { "$ref": "#/$defs/support" },
+        "datagram2": { "$ref": "#/$defs/support" },
+        "datagram3": { "$ref": "#/$defs/support" },
+        "shared_primary": { "$ref": "#/$defs/support" },
+        "shared_master": { "$ref": "#/$defs/support" },
+        "datagram_direct": { "$ref": "#/$defs/support" },
+        "raw_direct": { "$ref": "#/$defs/support" },
+        "session_identity_lookup": { "$ref": "#/$defs/support" }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/row" }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pass", "unsupported", "fail", "not_run", "create_only", "capability_passes"],
+      "properties": {
+        "pass": { "type": "integer", "minimum": 0 },
+        "unsupported": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 },
+        "not_run": { "type": "integer", "minimum": 0 },
+        "create_only": { "type": "integer", "minimum": 0 },
+        "capability_passes": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "endpoint": { "type": "string", "pattern": "^[0-9a-zA-Z.:\\[\\]-]+:[0-9]+$" },
+    "support": { "enum": ["unknown", "supported", "unsupported"] },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["destination", "destination_hash"],
+      "properties": {
+        "destination": { "type": "string", "minLength": 8 },
+        "destination_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "nullableIdentity": {
+      "oneOf": [{ "$ref": "#/$defs/identity" }, { "type": "null" }]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes_sent", "bytes_received", "exact_payload_match", "identity_proven"],
+      "properties": {
+        "bytes_sent": { "type": "integer", "minimum": 0 },
+        "bytes_received": { "type": "integer", "minimum": 0 },
+        "exact_payload_match": { "type": "boolean" },
+        "identity_proven": { "type": "boolean" },
+        "http_status": { "type": ["integer", "null"], "minimum": 100, "maximum": 599 },
+        "http_body_bytes": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "feature",
+        "operation",
+        "shared_dialect",
+        "local_identity",
+        "peer_identity",
+        "result",
+        "evidence",
+        "diagnostic_category",
+        "notes"
+      ],
+      "properties": {
+        "feature": { "enum": ["stream", "datagram", "raw", "datagram2", "datagram3", "shared"] },
+        "operation": { "type": "string", "minLength": 1 },
+        "shared_dialect": {
+          "oneOf": [{ "enum": ["MASTER", "PRIMARY"] }, { "type": "null" }]
+        },
+        "local_identity": { "$ref": "#/$defs/nullableIdentity" },
+        "peer_identity": { "$ref": "#/$defs/nullableIdentity" },
+        "result": { "enum": ["pass", "unsupported", "fail", "not_run", "create_only"] },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "diagnostic_category": { "type": ["string", "null"], "minLength": 1 },
+        "notes": {
+          "type": "string",
+          "description": "Human-readable detail. Private key material must never appear here.",
+          "not": { "pattern": "(?i)priv(ate)?[_-]?key|PRIV=" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "result": { "const": "pass" } }, "required": ["result"] },
+          "then": {
+            "properties": {
+              "evidence": {
+                "properties": {
+                  "bytes_sent": { "type": "integer", "minimum": 1 },
+                  "bytes_received": { "type": "integer", "minimum": 1 }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": { "const": "pass" },
+              "operation": { "const": "stream_http_service_request_response" }
+            },
+            "required": ["result", "operation"]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "required": ["http_status", "http_body_bytes"],
+                "properties": {
+                  "http_status": { "type": "integer", "minimum": 200, "maximum": 299 },
+                  "http_body_bytes": { "type": "integer", "minimum": 1 },
+                  "exact_payload_match": { "const": false }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": { "const": "pass" },
+              "operation": { "not": { "const": "stream_http_service_request_response" } }
+            },
+            "required": ["result", "operation"]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "properties": { "exact_payload_match": { "const": true } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "result": { "const": "not_run" } }, "required": ["result"] },
+          "then": { "properties": { "diagnostic_category": { "type": "string", "minLength": 1 } } }
+        },
+        {
+          "if": { "properties": { "result": { "const": "create_only" } }, "required": ["result"] },
+          "then": {
+            "properties": {
+              "diagnostic_category": { "const": "no_payload_evidence" },
+              "evidence": {
+                "properties": {
+                  "bytes_sent": { "const": 0 },
+                  "bytes_received": { "const": 0 },
+                  "exact_payload_match": { "const": false }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": { "const": "pass" },
+              "feature": { "const": "shared" }
+            },
+            "required": ["result", "feature"]
+          },
+          "then": {
+            "required": ["shared_dialect"],
+            "properties": {
+              "shared_dialect": { "enum": ["MASTER", "PRIMARY"] },
+              "local_identity": { "$ref": "#/$defs/identity" },
+              "evidence": { "properties": { "identity_proven": { "const": true } } }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "result": { "const": "pass" },
+              "feature": { "enum": ["datagram", "datagram2"] }
+            },
+            "required": ["result", "feature"]
+          },
+          "then": {
+            "properties": { "peer_identity": { "$ref": "#/$defs/identity" } }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "schema_version": "1.1",
+  "router": "i2pr",
+  "router_version_or_sha": "4f4e98f5a0241355af5099c73065088dede1b1de",
+  "endpoint": "127.0.0.1:7656",
+  "peer_endpoint": null,
+  "peer_router": null,
+  "peer_router_version_or_sha": null,
+  "negotiated_sam_version": null,
+  "local_identity": null,
+  "capabilities": {
+    "stream": "unknown",
+    "datagram": "unknown",
+    "raw": "unknown",
+    "datagram2": "unknown",
+    "datagram3": "unknown",
+    "shared_primary": "unknown",
+    "shared_master": "unknown",
+    "datagram_direct": "unknown",
+    "raw_direct": "unknown",
+    "session_identity_lookup": "unknown"
+  },
+  "generated_at": "2026-10-07T15:08:00Z",
+  "plan": "full",
+  "rows": [
+    {
+      "feature": "stream",
+      "operation": "stream_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pr' not found on PATH; documented start: cargo run --release --bin i2pr"
+    },
+    {
+      "feature": "datagram",
+      "operation": "datagram_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pr' not found on PATH; documented start: cargo run --release --bin i2pr"
+    },
+    {
+      "feature": "raw",
+      "operation": "raw_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pr' not found on PATH; documented start: cargo run --release --bin i2pr"
+    },
+    {
+      "feature": "datagram2",
+      "operation": "datagram2_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pr' not found on PATH; documented start: cargo run --release --bin i2pr"
+    },
+    {
+      "feature": "datagram3",
+      "operation": "datagram3_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pr' not found on PATH; documented start: cargo run --release --bin i2pr"
+    },
+    {
+      "feature": "shared",
+      "operation": "shared_primary_payload_exchange",
+      "shared_dialect": "PRIMARY",
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pr' not found on PATH; documented start: cargo run --release --bin i2pr"
+    },
+    {
+      "feature": "shared",
+      "operation": "shared_master_payload_exchange",
+      "shared_dialect": "MASTER",
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pr' not found on PATH; documented start: cargo run --release --bin i2pr"
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "unsupported": 0,
+    "fail": 0,
+    "not_run": 7,
+    "create_only": 0,
+    "capability_passes": 0
+  }
+}

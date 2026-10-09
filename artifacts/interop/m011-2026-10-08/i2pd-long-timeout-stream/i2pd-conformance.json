@@ -1,0 +1,62 @@
+{
+  "capabilities": {
+    "datagram": "unknown",
+    "datagram2": "unknown",
+    "datagram3": "unknown",
+    "datagram_direct": "unknown",
+    "raw": "unknown",
+    "raw_direct": "unknown",
+    "session_identity_lookup": "supported",
+    "shared_master": "unknown",
+    "shared_primary": "unknown",
+    "stream": "supported"
+  },
+  "endpoint": "127.0.0.1:17656",
+  "generated_at": "2026-10-08T11:27:24Z",
+  "local_identity": {
+    "destination": "Tye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnS08nt-jMrLpWr5QfzbZv0OKY-~Paiy7HialgAfIjtydLTye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnS08nt-jMrLpWr5QfzbZv0OKY-~Paiy7HialgAfIjtydLTye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnS08nt-jMrLpWr5QfzbZv0OKY-~Paiy7HialgAfIjtydLTye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnSy8ZJGx43e2fdGUgPmF6OOQsD63indCjGAL9pNdkZugMBQAEAAcAAA==",
+    "destination_hash": "8be31f43688c064e8d3dbca827b7548bff7df232cdff9e59b6cc25b016424970"
+  },
+  "negotiated_sam_version": "3.3",
+  "peer_endpoint": "127.0.0.1:17656",
+  "peer_router": null,
+  "peer_router_version_or_sha": null,
+  "plan": "stream",
+  "router": "i2pd",
+  "router_version_or_sha": "d147bb0fd6789c75dc1c4d70c4f79b151a552d53",
+  "rows": [
+    {
+      "diagnostic_category": "router_timeout",
+      "evidence": {
+        "bytes_received": 0,
+        "bytes_sent": 0,
+        "exact_payload_match": false,
+        "http_body_bytes": null,
+        "http_status": null,
+        "identity_proven": false
+      },
+      "feature": "stream",
+      "local_identity": {
+        "destination": "Tye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnS08nt-jMrLpWr5QfzbZv0OKY-~Paiy7HialgAfIjtydLTye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnS08nt-jMrLpWr5QfzbZv0OKY-~Paiy7HialgAfIjtydLTye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnS08nt-jMrLpWr5QfzbZv0OKY-~Paiy7HialgAfIjtydLTye36MysulavlB~Ntm~Q4pj789qLLseJqWAB8iO3J0tPJ7fozKy6Vq-UH822b9DimPvz2osux4mpYAHyI7cnSy8ZJGx43e2fdGUgPmF6OOQsD63indCjGAL9pNdkZugMBQAEAAcAAA==",
+        "destination_hash": "8be31f43688c064e8d3dbca827b7548bff7df232cdff9e59b6cc25b016424970"
+      },
+      "notes": "timed out waiting for the STREAM payload exchange",
+      "operation": "stream_payload_bidirectional",
+      "peer_identity": {
+        "destination": "V0ov7gepNwkyHC56ZVLIVdEOiCoa3vFyUg763g7mI3JXSi~uB6k3CTIcLnplUshV0Q6IKhre8XJSDvreDuYjcldKL-4HqTcJMhwuemVSyFXRDogqGt7xclIO-t4O5iNyV0ov7gepNwkyHC56ZVLIVdEOiCoa3vFyUg763g7mI3JXSi~uB6k3CTIcLnplUshV0Q6IKhre8XJSDvreDuYjcldKL-4HqTcJMhwuemVSyFXRDogqGt7xclIO-t4O5iNyV0ov7gepNwkyHC56ZVLIVdEOiCoa3vFyUg763g7mI3JXSi~uB6k3CTIcLnplUshV0Q6IKhre8XJSDvreDuYjcldKL-4HqTcJMhwuemVSyFXRDogqGt7xclIO-t4O5iNyV0ov7gepNwkyHC56ZVLIVdEOiCoa3vFyUg763g7mI3JXSi~uB6k3CTIcLnplUshV0Q6IKhre8XJSDvreDuYjcsN4tZqQml5vg9bNq7Ri6JiI0LTPMNgu-M0MwjWJa9HkBQAEAAcAAA==",
+        "destination_hash": "137af302492546902b69b5246670a86f20d93ee206d515564556753dab2cec0d"
+      },
+      "result": "not_run",
+      "shared_dialect": null
+    }
+  ],
+  "schema_version": "1.1",
+  "summary": {
+    "capability_passes": 0,
+    "create_only": 0,
+    "fail": 0,
+    "not_run": 1,
+    "pass": 0,
+    "unsupported": 0
+  }
+}

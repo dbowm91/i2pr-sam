@@ -1,0 +1,147 @@
+{
+  "schema_version": "1.1",
+  "router": "i2pd",
+  "router_version_or_sha": "d147bb0fd6789c75dc1c4d70c4f79b151a552d53",
+  "endpoint": "127.0.0.1:7656",
+  "peer_endpoint": null,
+  "peer_router": null,
+  "peer_router_version_or_sha": null,
+  "negotiated_sam_version": null,
+  "local_identity": null,
+  "capabilities": {
+    "stream": "unknown",
+    "datagram": "unknown",
+    "raw": "unknown",
+    "datagram2": "unknown",
+    "datagram3": "unknown",
+    "shared_primary": "unknown",
+    "shared_master": "unknown",
+    "datagram_direct": "unknown",
+    "raw_direct": "unknown",
+    "session_identity_lookup": "unknown"
+  },
+  "generated_at": "2026-10-07T15:50:09Z",
+  "plan": "full",
+  "rows": [
+    {
+      "feature": "stream",
+      "operation": "stream_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pd' not found on PATH; documented start: i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+    },
+    {
+      "feature": "datagram",
+      "operation": "datagram_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pd' not found on PATH; documented start: i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+    },
+    {
+      "feature": "raw",
+      "operation": "raw_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pd' not found on PATH; documented start: i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+    },
+    {
+      "feature": "datagram2",
+      "operation": "datagram2_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pd' not found on PATH; documented start: i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+    },
+    {
+      "feature": "datagram3",
+      "operation": "datagram3_payload_exchange",
+      "shared_dialect": null,
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pd' not found on PATH; documented start: i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+    },
+    {
+      "feature": "shared",
+      "operation": "shared_primary_payload_exchange",
+      "shared_dialect": "PRIMARY",
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pd' not found on PATH; documented start: i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+    },
+    {
+      "feature": "shared",
+      "operation": "shared_master_payload_exchange",
+      "shared_dialect": "MASTER",
+      "local_identity": null,
+      "peer_identity": null,
+      "result": "not_run",
+      "evidence": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "exact_payload_match": false,
+        "identity_proven": false
+      },
+      "diagnostic_category": "provisioning_binary_missing",
+      "notes": "provisioning_binary_missing: 'i2pd' not found on PATH; documented start: i2pd --sam.enabled=true --sam.bind.address=127.0.0.1 --sam.port=7656 --sam.bind.port=7655"
+    }
+  ],
+  "summary": {
+    "pass": 0,
+    "unsupported": 0,
+    "fail": 0,
+    "not_run": 7,
+    "create_only": 0,
+    "capability_passes": 0
+  }
+}
