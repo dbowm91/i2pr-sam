@@ -1,6 +1,6 @@
 # SAM Library Milestone 018 — C ABI and Python bindings
 
-Status: active
+Status: closed — see `plans/closure/sam-library/007-status.md`.
 
 Repository baseline: `84c5727` (`main`).
 
@@ -82,5 +82,6 @@ work would require an unresolved license decision.
 
 ## 10. Closure evidence
 
-Record implementation SHA, commands actually run, ABI ownership/error contract, Python
-surface, test counts, API snapshot effect, residual risks, and M008/M009 readiness.
+See `plans/closure/sam-library/007-status.md` for implementation SHA, commands actually
+run, ABI ownership/error contract, Python surface, test counts, API snapshot effect,
+residual risks, and M008/M009 readiness.
