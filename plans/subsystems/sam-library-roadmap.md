@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: M017 closing — reconciliation landed and CI-green at `28ee079`; PR #2 open as the merge vehicle; merge, post-merge CI, closure, and branch cleanup remain. M011 closed (Java I2P full live matrix 11/11); M005 and M006 retain their historical conditional closures with the live-payload residual satisfied; M012–M016 are closed.
+Status: M017 closing — PR #2 merged the reconciled foundation to `main` at `46d06ea`; post-merge exact-head CI, closure record, and final cleanup remain. M011 closed with Java I2P full live matrix 11/11; M012–M016 are closed. M018 is registered and blocked until M017 formally closes.
 
 Long-term references:
 
@@ -166,6 +166,11 @@ The exact later crate split is not frozen until those milestones are planned.
           v
         010 CLI/WebUI/sidecar packaging          [future]
 
+  017 foundation reconciliation/merge            [closing]
+    |
+    v
+  018 injected reliable SAM connection provider  [blocked on 017 closure]
+
   011 live router payload qualification   [registered by M005/M006 closure review]
     ^                                     |
     |  strict foundation closure          |  unblocks M007 and M008
@@ -323,6 +328,17 @@ Dependency: none on M012; may execute in parallel.
 Exit: the non-live Rust foundation verification is truthful and complete. **Closed**; see
 `plans/closure/sam-library/013-status.md`. M011 is the sole remaining foundation gate.
 
+
+### 018 — Injected SAM connection provider
+
+Class: infrastructure + invariant + public API extension.
+
+Objective: replace the reliable-path `TcpStream` coupling with one object-safe fresh-connection provider while preserving the canonical SAM protocol/session state and the existing default TCP API.
+
+Dependency: formal M017 closure after post-merge qualification.
+
+Exit: async SAM clients can open utility/control/STREAM connections through an injected `AsyncRead + AsyncWrite` provider; default TCP behavior remains compatible; injected mode cannot silently reach TCP/UDP forwarding; lifecycle/port/resource semantics and cross-platform/MSRV CI remain green.
+
 ## 8. Cross-cutting requirements
 
 ### Protocol and compatibility
@@ -394,7 +410,9 @@ the sole remaining foundation gate. Java SAM HTTP STREAM to a local server tunne
 DATAGRAM/RAW/shared payload evidence passed on the same router. **M011 is closed**; see
 `plans/closure/sam-library/011-status.md`.
 
-Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 must first reconcile evidence, obtain exact-head CI, merge the complete foundation to `main`, and retire stale branch/PR authority before downstream implementation begins.
+Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 has merged the complete foundation to `main`, but downstream implementation still waits for post-merge exact-head CI, the formal closure record, and final branch/registry cleanup.
+
+M018 is a post-foundation API extension, not another closure gate. It is already planned because downstream managed applications need SAM over inherited logical streams rather than host TCP. It becomes ready only after M017 formally closes the merged `main` foundation, and it must reuse the existing protocol/session engine rather than introduce a second client implementation.
 
 ## 12. Milestone status
 
@@ -416,4 +434,5 @@ Bindings, service-tunnel adapter, tunnel manager, and UI are not required for th
 | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | `plans/closure/sam-library/014-status.md` | — |
 | 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | `plans/closure/sam-library/015-status.md` | — |
 | 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | `plans/closure/sam-library/016-status.md` | — |
-| 017 | closing | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | — | reconciliation landed CI-green (`28ee079`); final PR/merge + post-merge CI + closure + branch cleanup remain |
+| 017 | closing | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | — | PR #2 merged; post-merge exact-head CI + closure record + cleanup |
+| 018 | blocked | `plans/implementation/sam-library/018-injected-sam-connection-provider.md` | — | M017 formal closure/post-merge qualification |
