@@ -27,13 +27,13 @@ Canonical direction:
 
 | Subsystem | Status | Roadmap | Current milestone | Dependencies/blockers |
 |---|---|---|---|---|
-| SAM library foundation | implementation closed; repository reconciliation pending | `plans/subsystems/sam-library-roadmap.md` | M017 ready: exact-head CI + evidence/docs + PR/merge/branch cleanup | M011 Java I2P matrix passed 11/11 and M012–M016 are closed, but `main`, README/conformance summary, M011 metadata, PR state, and exact-head CI are not yet reconciled. |
+| SAM library foundation | closing (reconciliation landed; merge + closure pending) | `plans/subsystems/sam-library-roadmap.md` | M017 closing: reconciliation commit `28ee079` CI-green at exact head; PR #2 open; merge/post-merge CI/closure/branch cleanup remain | M011 Java I2P matrix passed 11/11 and M012–M016 are closed; README/conformance summary/M011 metadata/API blocking CI reconciled. Stale PR #1 superseded by PR #2, pending close without merge. |
 
 ## Dependency-ready implementation plans
 
 | Subsystem | Milestone | State | Handoff | Dependencies |
 |---|---:|---|---|---|
-| SAM library | 017 | **ready** | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | M011–M016 closed; no protocol dependency |
+| SAM library | 017 | **closing** | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | M011–M016 closed; no protocol dependency |
 
 ## Closed implementation plans
 
@@ -51,7 +51,7 @@ Canonical direction:
 | SAM library | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | — |
 | SAM library | 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | — |
 | SAM library | 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | — |
-| SAM library | 017 | **ready** | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | Reconcile/verify/merge complete foundation to main |
+| SAM library | 017 | **closing** | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | Merge/post-merge CI/closure/branch cleanup remain; PR #2 is the merge vehicle |
 
 Closure evidence is under `plans/closure/sam-library/`.
 
@@ -75,6 +75,6 @@ shifted to make room for the two corrective gates discovered by M002–M004 clos
 
 ## Active sequence
 
-`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(closed: Java I2P 11/11 live payload pass) -> 017(ready reconciliation/merge) -> strict foundation authority on main`
+`sam_library_foundation = 001(closed) -> 002(conditionally closed) -> 003(conditionally closed) -> 004(conditionally closed) -> 005(conditionally closed) -> 006(conditionally closed) -> {012(closed), 013(closed), 014(closed), 015(closed), 016(closed)} -> 011(closed: Java I2P 11/11 live payload pass) -> 017(closing reconciliation/merge) -> strict foundation authority on main`
 
 Bindings and the service-tunnel adapter remain not implementation-ready until M017 closes on `main`. M012 repaired M011's peer-endpoint path, workflow topology, UDP readiness semantics, and Python artifact hygiene. M013 independently supplied the missing blocking-parity evidence. M014–M016 repaired defects found during live qualification. M011 closed the foundation gate: the known-service HTTP STREAM lane passes with response status/body evidence, and same-router sender/receiver sessions pass every datagram and shared child row. A second router implementation, external datagram service, or cross-router tunnel is not required by the amended M011 basis.

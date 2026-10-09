@@ -1,6 +1,6 @@
 # SAM Library Roadmap
 
-Status: M011 closed — Java I2P full live matrix passes 11/11; M005 and M006 retain their historical conditional closures with the live-payload residual satisfied; M012–M016 are closed. No remaining foundation gate.
+Status: M017 closing — reconciliation landed and CI-green at `28ee079`; PR #2 open as the merge vehicle; merge, post-merge CI, closure, and branch cleanup remain. M011 closed (Java I2P full live matrix 11/11); M005 and M006 retain their historical conditional closures with the live-payload residual satisfied; M012–M016 are closed.
 
 Long-term references:
 
@@ -416,4 +416,4 @@ Bindings, service-tunnel adapter, tunnel manager, and UI are not required for th
 | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | `plans/closure/sam-library/014-status.md` | — |
 | 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | `plans/closure/sam-library/015-status.md` | — |
 | 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | `plans/closure/sam-library/016-status.md` | — |
-| 017 | ready | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | — | exact-head CI + docs/evidence + final PR/merge + branch cleanup |
+| 017 | closing | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | — | reconciliation landed CI-green (`28ee079`); final PR/merge + post-merge CI + closure + branch cleanup remain |
