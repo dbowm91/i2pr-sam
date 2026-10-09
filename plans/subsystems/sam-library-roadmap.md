@@ -156,9 +156,9 @@ The exact later crate split is not frozen until those milestones are planned.
   v
 006 verification/CI/public-API stabilization corrective
   |
-  +--> 007 foreign-language bindings            [future; blocked on M011]
+  +--> 007 foreign-language bindings            [closed]
   |
-  +--> 008 service-tunnel adapter               [future; blocked on M011; i2pr contract]
+  +--> 008 service-tunnel adapter               [closed; initial STREAM subset]
           |
           v
         009 daemon/config/management             [future]
@@ -168,7 +168,7 @@ The exact later crate split is not frozen until those milestones are planned.
 
   011 live router payload qualification   [registered by M005/M006 closure review]
     ^                                     |
-    |  strict foundation closure          |  unblocks M007 and M008
+    |  strict foundation closure          |  unblocked M007 and M008
     +-------------------------------------|
 ```
 
@@ -266,13 +266,10 @@ Repository license selection remains a publication prerequisite.
 
 ### 008 — i2pr service-tunnel adapter
 
-Future, unplanned implementation handoff. Foundation prerequisites are satisfied
-(M011 strict live closure and M017 merged to `main`); upstream i2pr Plan 379 has
-passed and merged to `main` (`dbowm91/i2pr` PR #36, merge `e13546b`, 2026-10-07),
-so the remaining step is selecting and pinning the `i2pr-service-tunnels`
-revision at planning time (recommended: `f0fb74a8`, proven reachable by upstream's
-current external-consumer fixture); consumes the public policy/filter core and
-does not copy it.
+Closed; see `plans/closure/sam-library/008-status.md`. The initial adapter consumes the
+public `i2pr-service-tunnels` policy/filter core at pinned revision
+`f0fb74a8582d6077a7c5db49d613699688115bad`; it supports GenericClient, GenericServer,
+and HttpServer STREAM profiles and explicitly refuses unsupported profiles.
 
 ### 009 — Tunnel daemon and management API
 
@@ -399,7 +396,7 @@ the sole remaining foundation gate. Java SAM HTTP STREAM to a local server tunne
 DATAGRAM/RAW/shared payload evidence passed on the same router. **M011 is closed**; see
 `plans/closure/sam-library/011-status.md`.
 
-Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 reconciled evidence, obtained exact-head CI, merged the complete foundation to `main` (PR #2, `46d06ea`), and retired stale branch/PR authority; see `plans/closure/sam-library/017-status.md`. M007 bindings are closed against the merged foundation.
+Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 reconciled evidence, obtained exact-head CI, merged the complete foundation to `main` (PR #2, `46d06ea`), and retired stale branch/PR authority; see `plans/closure/sam-library/017-status.md`. M007 bindings and M008's initial service-tunnel adapter are closed against the merged foundation.
 
 ## 12. Milestone status
 
@@ -412,8 +409,8 @@ Bindings, service-tunnel adapter, tunnel manager, and UI are not required for th
 | 005 | conditionally closed | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | `plans/closure/sam-library/005-status.md` | live payload matrix → 011 |
 | 006 | conditionally closed | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | `plans/closure/sam-library/006-status.md` | 005 strict closure → 011 |
 | 007 | closed | `plans/implementation/sam-library/007-c-abi-and-python-bindings.md` | `plans/closure/sam-library/007-status.md` | — |
-| 008 | proposed | — | — | ready to plan with pinned i2pr revision (recommended `f0fb74a8`; upstream Plan 379 merged `e13546b`) |
-| 009 | proposed | — | — | 008 |
+| 008 | closed | `plans/implementation/sam-library/008-i2pr-service-tunnel-sam-adapter.md` | `plans/closure/sam-library/008-status.md` | — |
+| 009 | proposed | — | — | ready to plan after M008 adapter closure |
 | 010 | proposed | — | — | 009 |
 | 011 | closed | `plans/implementation/sam-library/011-live-router-payload-qualification.md` | `plans/closure/sam-library/011-status.md` | — |
 | 012 | closed | `plans/implementation/sam-library/012-live-qualification-harness-correctness-corrective.md` | `plans/closure/sam-library/012-status.md` | — |

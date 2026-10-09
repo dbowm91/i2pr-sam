@@ -1,6 +1,6 @@
 # SAM Library Milestone 008 — i2pr service-tunnel SAM adapter
 
-Status: closing
+Status: closed
 
 Repository baseline: `8982cb7` (M007 closed).
 
