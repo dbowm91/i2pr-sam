@@ -259,9 +259,9 @@ post-corrective foundation closure.
 
 ### 007 — C ABI and Python bindings
 
-Future, unplanned implementation handoff. Foundation prerequisites are satisfied
-(M011 strict live closure, M013 blocking-parity closure, and M017 merged to `main`);
-implementation planning may proceed against the merged pre-1.0 foundation.
+Implementation active under `plans/implementation/sam-library/007-c-abi-and-python-bindings.md`.
+Foundation prerequisites are satisfied (M011 strict live closure, M013 blocking-parity
+closure, and M017 merged to `main`).
 Repository license selection remains a publication prerequisite.
 
 ### 008 — i2pr service-tunnel adapter
@@ -399,7 +399,7 @@ the sole remaining foundation gate. Java SAM HTTP STREAM to a local server tunne
 DATAGRAM/RAW/shared payload evidence passed on the same router. **M011 is closed**; see
 `plans/closure/sam-library/011-status.md`.
 
-Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 reconciled evidence, obtained exact-head CI, merged the complete foundation to `main` (PR #2, `46d06ea`), and retired stale branch/PR authority; see `plans/closure/sam-library/017-status.md`. Downstream M007 implementation planning may now proceed against `main`.
+Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 reconciled evidence, obtained exact-head CI, merged the complete foundation to `main` (PR #2, `46d06ea`), and retired stale branch/PR authority; see `plans/closure/sam-library/017-status.md`. M007 bindings implementation is active against `main`.
 
 ## 12. Milestone status
 
@@ -411,7 +411,7 @@ Bindings, service-tunnel adapter, tunnel manager, and UI are not required for th
 | 004 | conditionally closed | `plans/implementation/sam-library/004-runtime-facades-conformance-api-stabilization.md` | `plans/closure/sam-library/004-status.md` | corrected by 005/006 |
 | 005 | conditionally closed | `plans/implementation/sam-library/005-foundation-live-interoperability-and-protocol-closure-corrective.md` | `plans/closure/sam-library/005-status.md` | live payload matrix → 011 |
 | 006 | conditionally closed | `plans/implementation/sam-library/006-foundation-verification-ci-api-stabilization-corrective.md` | `plans/closure/sam-library/006-status.md` | 005 strict closure → 011 |
-| 007 | proposed | — | — | prerequisites satisfied (M011/M013 closed, M017 merged); ready to plan |
+| 007 | active | `plans/implementation/sam-library/007-c-abi-and-python-bindings.md` | — | — |
 | 008 | proposed | — | — | ready to plan with pinned i2pr revision (recommended `f0fb74a8`; upstream Plan 379 merged `e13546b`) |
 | 009 | proposed | — | — | 008 |
 | 010 | proposed | — | — | 009 |

@@ -1,0 +1,15 @@
+[package]
+name = "i2pr-sam-ffi"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "C ABI for the i2pr-sam blocking client"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+i2pr-sam-blocking = { path = "../i2pr-sam-blocking" }
+
+[lints]
+workspace = true

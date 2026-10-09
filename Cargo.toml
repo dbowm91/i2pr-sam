@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/i2pr-sam-proto", "crates/i2pr-sam", "crates/i2pr-sam-blocking"]
+members = ["crates/i2pr-sam-proto", "crates/i2pr-sam", "crates/i2pr-sam-blocking", "crates/i2pr-sam-ffi", "crates/i2pr-sam-python"]
 resolver = "2"
 
 [workspace.package]

@@ -84,6 +84,9 @@ and re-verified by Milestone 005; see
   control socket), and shared-owner child lifecycle with concrete Destination identity.
 - `i2pr-sam-blocking` is a synchronous facade over the async crate. Calls made from an
   existing Tokio runtime return a typed `NestedRuntime` error.
+- `i2pr-sam-ffi` and `i2pr-sam-python` provide early C and Python wrappers over that
+  blocking facade. Their initial surface covers connection, name lookup, and explicit
+  Destination generation; see [`docs/foreign-bindings.md`](docs/foreign-bindings.md).
 
 The implementation is pre-1.0 and not published. Use the async or blocking crate for
 application code; see [`docs/client-usage.md`](docs/client-usage.md) for examples and

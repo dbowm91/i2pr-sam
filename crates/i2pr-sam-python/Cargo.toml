@@ -1,0 +1,21 @@
+[package]
+name = "i2pr-sam-python"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Python bindings for the i2pr-sam blocking client"
+
+[lib]
+name = "i2pr_sam"
+crate-type = ["cdylib"]
+doc = false
+
+[features]
+python-extension = ["pyo3/extension-module"]
+
+[dependencies]
+i2pr-sam-blocking = { path = "../i2pr-sam-blocking" }
+pyo3 = { version = "0.24", features = ["abi3-py39", "auto-initialize"] }
+
+[lints]
+workspace = true
