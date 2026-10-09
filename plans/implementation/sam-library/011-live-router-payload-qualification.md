@@ -2,7 +2,16 @@
 
 Class: corrective qualification + infrastructure.
 
-Status: **active — same-router service HTTP was proven directly; timeout and i2pd identity handling are corrected; live payload matrix remains open because this isolated router did not complete a payload exchange**.
+Status: **closed** — Java I2P full live matrix passes 11/11; see
+`plans/closure/sam-library/011-status.md` and
+`artifacts/interop/m011-2026-10-08/java-i2p-conformance.json`.
+
+> M017 current-authority note: this plan is closed. The research/attempt narrative
+> below is preserved as history. The “Full closure evidence still required” table
+> and the “M011 remains open” / “M011 is still open” sentences are
+> historical pre-closure context, superseded by the closure record and the final
+> Java artifact (schema 1.1, SAM 3.3, 11 pass / 0 fail / 0 not_run). i2pd attempt
+> history is preserved and remains informational, not a closure prerequisite.
 
 ## Objective
 
@@ -77,7 +86,7 @@ the target, response status, total bytes, and response-body bytes. It passes onl
 2xx response with a nonempty body. Its artifact evidence is operation-specific and does not
 claim byte-for-byte response echo.
 
-## Full closure evidence still required
+## Full closure evidence still required (historical pre-closure context — satisfied; see closure record)
 
 The single-router amendment removes cross-router tunnels and a second router implementation
 as prerequisites. It does not remove the payload semantics in the M005 corrective. The

@@ -8,6 +8,14 @@ commit; commit the tree before treating this record as final).
 Closure revision: this record, committed immediately after the implementation
 revision.
 
+> M017 reconciliation note (additive metadata correction, no live result changed):
+> the final integrated implementation/evidence/closure revision is
+> `de6bd3258105e6694ded1fdc5ef81abccd2d02fe`. Parent
+> `4c15aa02a30383a79cd2601ad589e73fdf62cb09` is the last pre-final-fix commit;
+> the “uncommitted working tree” wording above described work that was
+> subsequently committed together with this record in `de6bd32`. No live result,
+> row count, or acceptance conclusion is changed by this correction.
+
 Plan: `plans/implementation/sam-library/011-live-router-payload-qualification.md`.
 
 ## Work completed

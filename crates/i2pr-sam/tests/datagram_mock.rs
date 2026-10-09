@@ -57,10 +57,7 @@ async fn e_control_socket_datagram1_sends_raw_bytes_and_receives_an_announced_so
             ),
             // No reply rule: the bridge answers nothing for a v1 send. If the client
             // waited for a reply line here, this test would time out.
-            Rule::line(
-                Match::exact(DATAGRAM_SEND_LINE.trim_end_matches('\n')),
-                "",
-            ),
+            Rule::line(Match::exact(DATAGRAM_SEND_LINE.trim_end_matches('\n')), ""),
             Rule::raw(DATAGRAM_PAYLOAD.len(), DATAGRAM_PAYLOAD),
             Rule::push(inbound),
         ],
@@ -403,7 +400,9 @@ async fn k_forwarded_raw_with_header_true_preserves_ports_and_protocol() {
         }
         other => panic!("forwarded RAW must decode as Raw, not {other:?}"),
     }
-    bridge.connection(1).assert_wrote(b"sam.udp.port=7655 HEADER=true PROTOCOL=16\n");
+    bridge
+        .connection(1)
+        .assert_wrote(b"sam.udp.port=7655 HEADER=true PROTOCOL=16\n");
     bridge.assert_scripts_clean();
     session.close().await;
 }
@@ -545,7 +544,9 @@ async fn l_forwarded_datagram_session_keeps_its_control_socket_open_until_close(
         )
         .await
         .unwrap();
-    bridge.connection(1).assert_wrote(b"HOST=127.0.0.1 sam.udp.host=127.0.0.1 sam.udp.port=7655\n");
+    bridge
+        .connection(1)
+        .assert_wrote(b"HOST=127.0.0.1 sam.udp.host=127.0.0.1 sam.udp.port=7655\n");
     // Give a dropped socket time to deliver its FIN: without the retained control
     // socket the bridge observes the close within milliseconds.
     tokio::time::sleep(Duration::from_millis(500)).await;

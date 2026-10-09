@@ -7,19 +7,31 @@ The project is intentionally separate from the `dbowm91/i2pr` router. i2pr owns 
 **client** side: wire protocol/state, client sessions, router interoperability, language
 bindings, and eventually a standalone tunnel manager/daemon.
 
-Current status: **pre-1.0 implementation foundation, conditionally closed**. The protocol
+Current status: **pre-1.0 implementation foundation, closed**. The protocol
 codec, async client, blocking facade, both datagram transports, concrete shared-session
-identity, the conformance runner, the interop harness, and hosted CI are implemented.
+identity, the conformance runner, the interop harness, and hosted CI are implemented
+and merged to `main`.
 
-The 2026-10-08 conformance matrix still has no passing rows: it could not resolve its
-transient peer identity, and i2pd explicitly rejected PRIMARY shared style. A separate
-Java I2P SAM STREAM smoke test did resolve a valid local `.b32.i2p` server tunnel, send
-`GET /`, and receive `HTTP/1.1 200 OK` with 1,186 bytes. This proves a real SAM request and
-response through one router; cross-router evidence is not required for that check. The
-broader live feature matrix remains in M011. UDP probe silence at arbitrary endpoints is
-inconclusive and is not used to infer an egress policy. Milestones 005 and 006 remain
-conditionally closed pending the remaining M011 evidence. See `plans/closure/sam-library/`
-and `specs/live-router-qualification.md` for the results.
+The final Java I2P live matrix passes 11/11 with zero failures and zero `not_run`
+rows (SAM 3.3, router `2.13.1-1~ubuntu4`): one known-service HTTP STREAM row
+(`200 OK`, 1,186 response bytes / 998 body bytes), DATAGRAM and RAW over both
+UDP forwarding and control-socket modes, DATAGRAM2, DATAGRAM3 with unverified-source
+typing, and PRIMARY + MASTER shared STREAM/DATAGRAM child rows each proving one
+owner Destination with child removal and owner-teardown invalidation. Evidence:
+`artifacts/interop/m011-2026-10-08/java-i2p-conformance.json` and
+`java-i2p-matrix.csv`, summarized in `specs/conformance-observations.csv`.
+
+i2pd produced useful compatibility evidence (HELLO/SAM 3.3 session setup,
+`NAMING LOOKUP NAME=ME` identity, explicit `Unknown STYLE` rejection of PRIMARY)
+but no successful payload row; its leg remains router-blocked/incomplete and is not
+a closure prerequisite. i2pr was not live-qualified by this repository and carries
+no interoperability claim. No cross-router or multi-router interoperability is
+claimed: qualification is single-router Java I2P. UDP probe silence at arbitrary
+endpoints is inconclusive and is not used to infer an egress policy.
+Milestones 001 and 011–016 are closed; 002–006 retain their historical conditional
+closures with the live-payload residual satisfied by M011. See
+`plans/closure/sam-library/` and `specs/live-router-qualification.md` for the
+results.
 
 ## Target shape
 

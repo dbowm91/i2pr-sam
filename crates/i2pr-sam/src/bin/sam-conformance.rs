@@ -213,7 +213,9 @@ async fn connect_for_exchange(
                 let retryable = matches!(&error, SamError::Timeout)
                     || matches!(&error, SamError::Rejected(message) if message.contains("CANT_REACH_PEER"));
                 if retryable && attempt < attempts {
-                    eprintln!("live retry: connect attempt {attempt} not yet accepted ({error}), retrying");
+                    eprintln!(
+                        "live retry: connect attempt {attempt} not yet accepted ({error}), retrying"
+                    );
                     tokio::time::sleep(Duration::from_secs(3)).await;
                     last = Some(error);
                     continue;
@@ -270,6 +272,10 @@ enum Outcome {
     Unsupported,
     Fail,
     NotRun,
+    // Retained for schema completeness: the conformance vocabulary includes
+    // `create_only` (session created without payload evidence, never a
+    // capability pass). No current runner path emits it.
+    #[allow(dead_code)]
     CreateOnly,
 }
 
@@ -381,6 +387,8 @@ impl Row {
         self
     }
 
+    // Retained for schema completeness (see `Outcome::CreateOnly`).
+    #[allow(dead_code)]
     fn created_only(mut self, note: impl Into<String>) -> Self {
         self.outcome = Outcome::CreateOnly;
         self.diagnostic_category = Some("no_payload_evidence".into());
@@ -570,23 +578,28 @@ async fn stream_row(options: &Options, client: &SamClient, peer: &SamClient) -> 
         )
         .await
         {
-            Ok(Ok(_)) => trace_step("debug stream: cross-lookup accept-side dest from peer client ok".to_owned()),
-            Ok(Err(error)) => {
-                trace_step(format!("debug stream: cross-lookup accept-side dest failed: {error}"))
+            Ok(Ok(_)) => trace_step(
+                "debug stream: cross-lookup accept-side dest from peer client ok".to_owned(),
+            ),
+            Ok(Err(error)) => trace_step(format!(
+                "debug stream: cross-lookup accept-side dest failed: {error}"
+            )),
+            Err(_) => {
+                trace_step("debug stream: cross-lookup accept-side dest timed out".to_owned())
             }
-            Err(_) => trace_step("debug stream: cross-lookup accept-side dest timed out".to_owned()),
         }
-        match tokio::time::timeout(
-            Duration::from_secs(60),
-            peer.lookup_destination(&local_b32),
-        )
-        .await
+        match tokio::time::timeout(Duration::from_secs(60), peer.lookup_destination(&local_b32))
+            .await
         {
-            Ok(Ok(_)) => trace_step("debug stream: cross-lookup connect-side dest from main client ok".to_owned()),
-            Ok(Err(error)) => {
-                trace_step(format!("debug stream: cross-lookup connect-side dest failed: {error}"))
+            Ok(Ok(_)) => trace_step(
+                "debug stream: cross-lookup connect-side dest from main client ok".to_owned(),
+            ),
+            Ok(Err(error)) => trace_step(format!(
+                "debug stream: cross-lookup connect-side dest failed: {error}"
+            )),
+            Err(_) => {
+                trace_step("debug stream: cross-lookup connect-side dest timed out".to_owned())
             }
-            Err(_) => trace_step("debug stream: cross-lookup connect-side dest timed out".to_owned()),
         }
     }
 
@@ -605,15 +618,24 @@ async fn stream_row(options: &Options, client: &SamClient, peer: &SamClient) -> 
                 let session = Arc::clone(&session);
                 tokio::spawn(async move {
                     let mut stream = session.accept().await?;
-                    trace_step(format!("live trace stream accept peer-blocked at {}", live_ts()));
+                    trace_step(format!(
+                        "live trace stream accept peer-blocked at {}",
+                        live_ts()
+                    ));
                     let peer: Option<i2pr_sam::StreamPeer> = stream.peer().cloned();
                     let mut received = vec![0; max_payload];
                     stream.read_exact(&mut received).await?;
-                    trace_step(format!("live trace stream accept payload-read at {}", live_ts()));
+                    trace_step(format!(
+                        "live trace stream accept payload-read at {}",
+                        live_ts()
+                    ));
                     let reply = payload(0xA5, max_payload);
                     stream.write_all(&reply).await?;
                     stream.flush().await?;
-                    trace_step(format!("live trace stream accept reply-written at {}", live_ts()));
+                    trace_step(format!(
+                        "live trace stream accept reply-written at {}",
+                        live_ts()
+                    ));
                     Ok::<_, SamError>((peer, received, reply.len()))
                 })
             };
@@ -626,10 +648,16 @@ async fn stream_row(options: &Options, client: &SamClient, peer: &SamClient) -> 
                     let body = payload(0x5A, max_payload);
                     stream.write_all(&body).await?;
                     stream.flush().await?;
-                    trace_step(format!("live trace stream connect payload-written at {}", live_ts()));
+                    trace_step(format!(
+                        "live trace stream connect payload-written at {}",
+                        live_ts()
+                    ));
                     let mut reply = vec![0; max_payload];
                     stream.read_exact(&mut reply).await?;
-                    trace_step(format!("live trace stream connect reply-read at {}", live_ts()));
+                    trace_step(format!(
+                        "live trace stream connect reply-read at {}",
+                        live_ts()
+                    ));
                     Ok::<_, SamError>((body, reply))
                 })
             };
@@ -891,8 +919,7 @@ async fn datagram_row(
     {
         Ok(session) => session,
         Err(error) => {
-            return row
-                .failed(&error, "this side could not create the session");
+            return row.failed(&error, "this side could not create the session");
         }
     };
     let peer_session = match peer
@@ -908,8 +935,7 @@ async fn datagram_row(
         Ok(peer_session) => peer_session,
         Err(error) => {
             session.close().await;
-            return row
-                .failed(&error, "the peer side could not create a matching session");
+            return row.failed(&error, "the peer side could not create a matching session");
         }
     };
     let Some(local_identity) = session.identity() else {
@@ -935,46 +961,44 @@ async fn datagram_row(
     // Datagram retries re-send on the same sessions: each send is independent traffic
     // that keeps warming the receiver's freshly published LeaseSet.
     let attempts = live_attempts();
-    let (body, received) = loop {
-        let mut attempt_verdict = None;
-        for attempt in 1..=attempts {
-            let attempt_body = payload(0x3C, options.max_payload);
-            if let Err(error) = peer_session
-                .send(&destination, &attempt_body, None, None)
-                .await
-            {
+    let mut attempt_verdict = None;
+    for attempt in 1..=attempts {
+        let attempt_body = payload(0x3C, options.max_payload);
+        if let Err(error) = peer_session
+            .send(&destination, &attempt_body, None, None)
+            .await
+        {
+            session.close().await;
+            peer_session.close().await;
+            return row.failed(&error, "peer send failed before delivery");
+        }
+        match tokio::time::timeout(options.control_timeout, session.recv()).await {
+            Ok(Ok(attempt_received)) => {
+                attempt_verdict = Some((attempt_body, attempt_received));
+                break;
+            }
+            Ok(Err(error)) => {
                 session.close().await;
                 peer_session.close().await;
-                return row.failed(&error, "peer send failed before delivery");
+                return row.failed(&error, "no datagram was delivered");
             }
-            match tokio::time::timeout(options.control_timeout, session.recv()).await {
-                Ok(Ok(attempt_received)) => {
-                    attempt_verdict = Some((attempt_body, attempt_received));
-                    break;
-                }
-                Ok(Err(error)) => {
-                    session.close().await;
-                    peer_session.close().await;
-                    return row.failed(&error, "no datagram was delivered");
-                }
-                Err(_) => {
-                    if attempt < attempts {
-                        eprintln!(
-                            "live retry: datagram exchange attempt {attempt} timed out, resending"
-                        );
-                        continue;
-                    }
-                    session.close().await;
-                    peer_session.close().await;
-                    return row.skipped(
-                        "router_timeout",
-                        "timed out waiting for the datagram receiver session",
+            Err(_) => {
+                if attempt < attempts {
+                    eprintln!(
+                        "live retry: datagram exchange attempt {attempt} timed out, resending"
                     );
+                    continue;
                 }
+                session.close().await;
+                peer_session.close().await;
+                return row.skipped(
+                    "router_timeout",
+                    "timed out waiting for the datagram receiver session",
+                );
             }
         }
-        break attempt_verdict.expect("retry loop always breaks with a verdict");
-    };
+    }
+    let (body, received) = attempt_verdict.expect("retry loop always breaks with a verdict");
     session.close().await;
     peer_session.close().await;
     let (inbound, source_known, trust_shape_matches) = match (style, &received) {
@@ -1070,10 +1094,14 @@ async fn shared_rows(
         Ok(session) => session,
         Err(error) => {
             return vec![
-                stream_row
-                    .failed(&error, format!("{name} shared session could not be created")),
-                datagram_row
-                    .failed(&error, format!("{name} shared session could not be created")),
+                stream_row.failed(
+                    &error,
+                    format!("{name} shared session could not be created"),
+                ),
+                datagram_row.failed(
+                    &error,
+                    format!("{name} shared session could not be created"),
+                ),
             ];
         }
     };
@@ -1090,10 +1118,8 @@ async fn shared_rows(
         Err(error) => {
             session.close().await;
             return vec![
-                stream_row
-                    .failed(&error, "datagram subsession could not be added"),
-                datagram_row
-                    .failed(&error, "datagram subsession could not be added"),
+                stream_row.failed(&error, "datagram subsession could not be added"),
+                datagram_row.failed(&error, "datagram subsession could not be added"),
             ];
         }
     };
@@ -1106,10 +1132,8 @@ async fn shared_rows(
             session.close().await;
             datagram_child.close().await;
             return vec![
-                stream_row
-                    .failed(&error, "stream subsession could not be added"),
-                datagram_row
-                    .failed(&error, "stream subsession could not be added"),
+                stream_row.failed(&error, "stream subsession could not be added"),
+                datagram_row.failed(&error, "stream subsession could not be added"),
             ];
         }
     };
@@ -1144,8 +1168,7 @@ async fn shared_rows(
     {
         Ok(session) => Some(session),
         Err(error) => {
-            stream_row = stream_row
-                .failed(&error, "peer stream session could not be created");
+            stream_row = stream_row.failed(&error, "peer stream session could not be created");
             None
         }
     };
@@ -1200,7 +1223,9 @@ async fn shared_rows(
                         receiving.abort();
                         sending.abort();
                         if attempt < attempts {
-                            eprintln!("live retry: shared STREAM attempt {attempt} timed out, retrying");
+                            eprintln!(
+                                "live retry: shared STREAM attempt {attempt} timed out, retrying"
+                            );
                             continue;
                         }
                         stream_row = stream_row.skipped(
@@ -1210,51 +1235,54 @@ async fn shared_rows(
                     }
                     Ok((receiving_result, sending_result)) => {
                         match (receiving_result, sending_result) {
-                        (Ok(Ok((peer_observed, inbound))), Ok(Ok(outbound))) => {
-                            let expected = payload(0x6B, max_payload);
-                            let exact = inbound == expected && outbound == expected;
-                            let identity_proven = peer_observed.as_ref().is_some_and(|observed| {
-                                observed.destination == expected_peer_destination
-                            });
-                            stream_row.evidence = Evidence {
-                                bytes_sent: outbound.len(),
-                                bytes_received: inbound.len(),
-                                exact_payload_match: exact,
-                                identity_proven,
-                                ..Evidence::default()
-                            };
-                            if exact && identity_proven {
-                                stream_row.outcome = Outcome::Pass;
-                                stream_row.notes = format!(
-                                    "shared STREAM child exchanged an exact payload under Destination hash {} and captured the peer Destination",
-                                    identity.hash()
-                                );
-                            } else {
-                                stream_row.outcome = Outcome::Fail;
-                                stream_row.diagnostic_category = Some(if exact {
-                                    "identity_not_observed".into()
+                            (Ok(Ok((peer_observed, inbound))), Ok(Ok(outbound))) => {
+                                let expected = payload(0x6B, max_payload);
+                                let exact = inbound == expected && outbound == expected;
+                                let identity_proven =
+                                    peer_observed.as_ref().is_some_and(|observed| {
+                                        observed.destination == expected_peer_destination
+                                    });
+                                stream_row.evidence = Evidence {
+                                    bytes_sent: outbound.len(),
+                                    bytes_received: inbound.len(),
+                                    exact_payload_match: exact,
+                                    identity_proven,
+                                    ..Evidence::default()
+                                };
+                                if exact && identity_proven {
+                                    stream_row.outcome = Outcome::Pass;
+                                    stream_row.notes = format!(
+                                        "shared STREAM child exchanged an exact payload under Destination hash {} and captured the peer Destination",
+                                        identity.hash()
+                                    );
                                 } else {
-                                    "payload_mismatch".into()
-                                });
-                                stream_row.notes = "shared STREAM child did not produce verifiable payload and identity evidence".into();
+                                    stream_row.outcome = Outcome::Fail;
+                                    stream_row.diagnostic_category = Some(if exact {
+                                        "identity_not_observed".into()
+                                    } else {
+                                        "payload_mismatch".into()
+                                    });
+                                    stream_row.notes = "shared STREAM child did not produce verifiable payload and identity evidence".into();
+                                }
                             }
-                        }
-                        (Ok(Err(error)), _) | (_, Ok(Err(error))) => {
-                            if retryable(&error) && attempt < attempts {
-                                eprintln!("live retry: shared STREAM attempt {attempt} stalled ({error}), retrying");
-                                continue;
+                            (Ok(Err(error)), _) | (_, Ok(Err(error))) => {
+                                if retryable(&error) && attempt < attempts {
+                                    eprintln!(
+                                        "live retry: shared STREAM attempt {attempt} stalled ({error}), retrying"
+                                    );
+                                    continue;
+                                }
+                                stream_row = stream_row
+                                    .failed(&error, "shared STREAM exchange did not complete");
+                                break;
                             }
-                            stream_row = stream_row
-                                .failed(&error, "shared STREAM exchange did not complete");
-                            break;
-                        }
-                        (Err(error), _) | (_, Err(error)) => {
-                            stream_row = stream_row.skipped(
-                                "subsession_task_failed",
-                                format!("shared STREAM task failed: {error}"),
-                            );
-                            break;
-                        }
+                            (Err(error), _) | (_, Err(error)) => {
+                                stream_row = stream_row.skipped(
+                                    "subsession_task_failed",
+                                    format!("shared STREAM task failed: {error}"),
+                                );
+                                break;
+                            }
                         }
                         break;
                     }
@@ -1282,8 +1310,8 @@ async fn shared_rows(
     {
         Ok(peer_session) => Some(peer_session),
         Err(error) => {
-            datagram_row = datagram_row
-                .failed(&error, "peer datagram session could not be created");
+            datagram_row =
+                datagram_row.failed(&error, "peer datagram session could not be created");
             None
         }
     };
@@ -1302,8 +1330,10 @@ async fn shared_rows(
                     tokio::spawn(async move { child.recv_datagram().await })
                 };
                 if let Err(error) = peer_session.send(&destination, &body, None, None).await {
-                    datagram_row = datagram_row
-                        .failed(&error, "peer datagram send failed before the shared child received a payload");
+                    datagram_row = datagram_row.failed(
+                        &error,
+                        "peer datagram send failed before the shared child received a payload",
+                    );
                     break;
                 }
                 match tokio::time::timeout(options.control_timeout, receive).await {
@@ -1351,7 +1381,9 @@ async fn shared_rows(
                     }
                     Err(_) => {
                         if attempt < attempts {
-                            eprintln!("live retry: shared DATAGRAM attempt {attempt} timed out, resending");
+                            eprintln!(
+                                "live retry: shared DATAGRAM attempt {attempt} timed out, resending"
+                            );
                             continue;
                         }
                         datagram_row = datagram_row.skipped(
@@ -1484,7 +1516,8 @@ async fn run() -> Result<ExitCode, (u8, String)> {
                 options.control_timeout,
                 options.datagram_endpoint,
             ))
-            .await {
+            .await
+            {
                 Ok(client) => Some((client, endpoint)),
                 Err(error) => {
                     eprintln!("warning: peer endpoint {endpoint} unreachable: {error}");

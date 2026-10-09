@@ -1,5 +1,11 @@
 # Live-router qualification attempt
 
+> M017 current-authority note: M011 is **closed**. The final Java I2P matrix passes
+> 11/11 (`artifacts/interop/m011-2026-10-08/java-i2p-conformance.json`, SAM 3.3);
+> see `plans/closure/sam-library/011-status.md` and the final section below. The
+> 2026-10-07/early-2026-10-08 `not_run` narrative is preserved as history. i2pd is
+> partial/incomplete (not a closure prerequisite); i2pr was not live-qualified.
+
 ## M012 correction to the historical UDP interpretation
 
 The 2026-10-07 observation below remains a record of what that probe saw, but its

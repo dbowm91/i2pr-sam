@@ -240,13 +240,12 @@ pub async fn read_stream_peer<R: AsyncBufRead + Unpin>(
     // router really sends. What separates the two is whether the token begins with a known
     // SAM field name, which a Destination never does.
     let mut tokens = text.split_whitespace();
-    let destination_token =
-        tokens
-            .next()
-            .filter(|token| looks_like_bare_token(token))
-            .ok_or_else(|| {
-                SamError::Rejected("stream accept did not announce a peer Destination".into())
-            })?;
+    let destination_token = tokens
+        .next()
+        .filter(|token| looks_like_bare_token(token))
+        .ok_or_else(|| {
+            SamError::Rejected("stream accept did not announce a peer Destination".into())
+        })?;
     let mut peer = StreamPeer {
         destination: Destination::new(destination_token)
             .map_err(|_| SamError::Rejected("stream peer Destination is invalid".into()))?,
@@ -254,9 +253,9 @@ pub async fn read_stream_peer<R: AsyncBufRead + Unpin>(
         to_port: None,
     };
     for token in tokens {
-        let (key, value) = token.split_once('=').ok_or_else(|| {
-            SamError::Rejected("stream peer identity line is malformed".into())
-        })?;
+        let (key, value) = token
+            .split_once('=')
+            .ok_or_else(|| SamError::Rejected("stream peer identity line is malformed".into()))?;
         let parsed = value.parse::<u16>().map(Port::new);
         match (key, parsed) {
             ("FROM_PORT", Ok(port)) => peer.from_port = Some(port),
