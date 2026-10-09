@@ -394,8 +394,7 @@ the sole remaining foundation gate. Java SAM HTTP STREAM to a local server tunne
 DATAGRAM/RAW/shared payload evidence passed on the same router. **M011 is closed**; see
 `plans/closure/sam-library/011-status.md`.
 
-Bindings, service-tunnel adapter, tunnel manager, and UI are not required for foundation
-closure and must not begin implementation before the corrective/live chain is complete.
+Bindings, service-tunnel adapter, tunnel manager, and UI are not required for the technical foundation. M017 must first reconcile evidence, obtain exact-head CI, merge the complete foundation to `main`, and retire stale branch/PR authority before downstream implementation begins.
 
 ## 12. Milestone status
 
@@ -417,3 +416,4 @@ closure and must not begin implementation before the corrective/live chain is co
 | 014 | closed | `plans/implementation/sam-library/014-sam-bridge-preflight-greeting-corrective.md` | `plans/closure/sam-library/014-status.md` | — |
 | 015 | closed | `plans/implementation/sam-library/015-conformance-datagram2-runner-dispatch-corrective.md` | `plans/closure/sam-library/015-status.md` | — |
 | 016 | closed | `plans/implementation/sam-library/016-i2pd-unknown-style-verdict-corrective.md` | `plans/closure/sam-library/016-status.md` | — |
+| 017 | ready | `plans/implementation/sam-library/017-foundation-closure-reconciliation-and-merge-readiness.md` | — | exact-head CI + docs/evidence + final PR/merge + branch cleanup |
